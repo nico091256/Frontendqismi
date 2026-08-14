@@ -596,12 +596,122 @@ h3 { font-size: 1.1rem; font-weight: 600; }
   color: #fca5a5;
 }
 
-/* ── Responsive ──────────────────────────────────────── */
-@media (max-width: 640px) {
-  .navbar-inner { height: 56px; }
-  .page { padding: 32px 0 60px; }
-  .card { padding: 20px; }
-  .problem-card { padding: 16px; }
-  .stats-bar { gap: 10px; }
-  .stat-chip { padding: 10px 14px; }
+/* ── Reports Grid (Responsive) ───────────────────────── */
+.reports-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+/* ── Responsive Design (Comprehensive) ───────────────── */
+@media (max-width: 1024px) {
+  .reports-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 0 16px;
+  }
+  .navbar-inner {
+    height: auto;
+    min-height: 58px;
+    padding: 10px 0;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .navbar-brand {
+    font-size: 1rem;
+  }
+  .navbar-nav {
+    width: 100%;
+    justify-content: space-between;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .nav-link {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .page {
+    padding: 24px 0 60px;
+  }
+  .hero {
+    padding: 32px 16px 28px;
+  }
+  .hero h1 {
+    font-size: 1.6rem;
+  }
+  .hero p {
+    font-size: 0.9rem;
+  }
+  .card {
+    padding: 18px 16px;
+    border-radius: var(--radius-md);
+  }
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .stat-chip {
+    min-width: unset;
+    padding: 10px 12px;
+  }
+  .stat-chip .stat-value {
+    font-size: 1.2rem;
+  }
+  .reports-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .filter-bar {
+    gap: 6px;
+  }
+  .filter-spacer {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar-nav {
+    gap: 2px;
+  }
+  .nav-link {
+    padding: 6px 8px;
+    font-size: 0.75rem;
+  }
+  .stats-bar {
+    grid-template-columns: 1fr;
+  }
+  .problem-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .problem-card-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .card-actions {
+    display: flex;
+    width: 100%;
+    gap: 8px;
+  }
+  .card-actions .btn {
+    flex: 1;
+  }
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .btn-lg {
+    padding: 12px 20px;
+    font-size: 0.9rem;
+  }
 }

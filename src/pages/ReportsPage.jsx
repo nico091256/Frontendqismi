@@ -225,7 +225,7 @@ export default function ReportsPage() {
             </div>
 
             {/* ── Bottom row: Pie + Top rooms + Top computers ── */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 20 }}>
+            <div className="reports-grid">
 
               {/* Pie chart */}
               <div className="card">
