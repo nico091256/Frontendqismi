@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getStats } from '../api/problems';
 import toast from 'react-hot-toast';
 import {
@@ -51,6 +52,7 @@ function exportCSV(monthly, year) {
 }
 
 export default function ReportsPage() {
+  const navigate = useNavigate();
   const currentYear = new Date().getFullYear();
   const [year, setYear] = useState(currentYear);
   const [data, setData] = useState(null);
@@ -64,16 +66,16 @@ export default function ReportsPage() {
       if (showToast) toast.success('Yangilandi!');
     } catch (err) {
       if (err.response?.status === 401) {
-        localStorage.removeItem('it_admin_key');
-        toast.error("Sessiya muddati tugadi yoki parol noto'g'ri. Qayta kiring.");
-        setTimeout(() => window.location.reload(), 1000);
+        localStorage.removeItem('it_auth');
+        toast.error("Sessiya muddati tugadi. Qayta kiring.");
+        setTimeout(() => navigate('/login'), 800);
         return;
       }
       toast.error("Statistikani yuklashda xatolik.");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [navigate]);
 
   useEffect(() => { fetchStats(year); }, [year, fetchStats]);
 

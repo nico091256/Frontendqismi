@@ -5,34 +5,40 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// Auto-inject admin key from localStorage if present
+// ── Token ni avtomatik inject qilish ──────────────────────────────────
 api.interceptors.request.use((config) => {
-  const adminKey = localStorage.getItem('it_admin_key');
-  if (adminKey) {
-    config.headers['x-admin-key'] = adminKey;
+  const auth = localStorage.getItem('it_auth');
+  if (auth) {
+    try {
+      const { token } = JSON.parse(auth);
+      if (token) config.headers['Authorization'] = `Bearer ${token}`;
+    } catch { /* ignore */ }
   }
   return config;
 });
 
-// Verify Admin Password / PIN
-export const verifyAdminPassword = (password) => api.post('/auth/verify-admin', { password });
+// ── Auth ─────────────────────────────────────────────────────────────
+export const registerUser = (data) => api.post('/auth/register', data);
+export const loginUser    = (data) => api.post('/auth/login', data);
+export const logoutUser   = ()     => api.post('/auth/logout');
+export const getMe        = ()     => api.get('/auth/me');
 
-// Submit a new problem (employee - public)
-export const createProblem = (data) => api.post('/problems', data);
+// ── Foydalanuvchilar (Manager uchun) ─────────────────────────────────
+export const getITWorkers   = ()   => api.get('/users?role=IT_SUPPORT');
+export const deleteITWorker = (id) => api.delete(`/users/${id}`);
 
-// Get all problems (admin)
-export const getAllProblems = () => api.get('/problems');
+// ── Topshiriqlar ─────────────────────────────────────────────────────
+export const getTasks         = ()             => api.get('/tasks');
+export const createTask       = (data)         => api.post('/tasks', data);
+export const updateTaskStatus = (id, status)   => api.patch(`/tasks/${id}/status`, { status });
+export const deleteTask       = (id)           => api.delete(`/tasks/${id}`);
 
-// Get single problem
-export const getProblemById = (id) => api.get(`/problems/${id}`);
-
-// Mark as resolved (admin)
-export const resolveProblem = (id) => api.patch(`/problems/${id}/resolve`);
-
-// Delete problem (admin)
-export const deleteProblem = (id) => api.delete(`/problems/${id}`);
-
-// Get analytics/stats (admin reports) — ?year=2026
-export const getStats = (year) => api.get(`/stats${year ? `?year=${year}` : ''}`);
-
-
+// ── Murojaatlar ───────────────────────────────────────────────────────
+export const createProblem  = (data)     => api.post('/problems', data);
+export const getAllProblems  = ()         => api.get('/problems');
+export const getProblemById = (id)       => api.get(`/problems/${id}`);
+export const resolveProblem = (id)       => api.patch(`/problems/${id}/resolve`);
+export const deleteProblem  = (id)       => api.delete(`/problems/${id}`);
+export const updateProblem  = (id, data) => api.patch(`/problems/${id}`, data);
+export const exportExcel    = ()         => api.get('/problems/export', { responseType: 'blob' });
+export const getStats       = (year)     => api.get(`/stats${year ? `?year=${year}` : ''}`);

@@ -1,11 +1,14 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Navbar from './components/Navbar';
-import EmployeePage from './pages/EmployeePage';
 import AdminPage from './pages/AdminPage';
 import ReportsPage from './pages/ReportsPage';
+import LoginPage from './pages/LoginPage';
+import TasksPage from './pages/TasksPage';
+import ManagerPage from './pages/ManagerPage';
 
 import AdminGuard from './components/AdminGuard';
+import ManagerGuard from './components/ManagerGuard';
 
 export default function App() {
   return (
@@ -29,7 +32,13 @@ export default function App() {
       <Navbar />
 
       <Routes>
-        <Route path="/" element={<EmployeePage />} />
+        {/* Ildiz sahifa — login ga yo'naltiradi */}
+        <Route path="/" element={<Navigate to="/login" replace />} />
+
+        {/* Kirish sahifasi */}
+        <Route path="/login" element={<LoginPage />} />
+
+        {/* IT Support sahifalari */}
         <Route
           path="/admin"
           element={
@@ -46,6 +55,27 @@ export default function App() {
             </AdminGuard>
           }
         />
+        <Route
+          path="/tasks"
+          element={
+            <AdminGuard>
+              <TasksPage />
+            </AdminGuard>
+          }
+        />
+
+        {/* Manager sahifasi */}
+        <Route
+          path="/manager"
+          element={
+            <ManagerGuard>
+              <ManagerPage />
+            </ManagerGuard>
+          }
+        />
+
+        {/* Noma'lum yo'l */}
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
   );

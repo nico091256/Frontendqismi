@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
-// IT Support sahifalarini himoya qiladi
-export default function AdminGuard({ children }) {
+// Faqat Manager sahifasini himoya qiladi
+export default function ManagerGuard({ children }) {
   const navigate = useNavigate();
   const [checked, setChecked] = useState(false);
   const [allowed, setAllowed] = useState(false);
@@ -13,7 +13,7 @@ export default function AdminGuard({ children }) {
     if (authRaw) {
       try {
         const auth = JSON.parse(authRaw);
-        if (auth?.token && (auth.role === 'IT_SUPPORT' || auth.role === 'MANAGER')) {
+        if (auth?.token && auth.role === 'MANAGER') {
           setAllowed(true);
           setChecked(true);
           return;
@@ -23,7 +23,7 @@ export default function AdminGuard({ children }) {
 
     setChecked(true);
     navigate('/login', { replace: true });
-    toast.error('Kirish uchun avval tizimga ulaning.');
+    toast.error("Bu sahifaga faqat Manager kira oladi.");
   }, [navigate]);
 
   if (!checked) return null;
