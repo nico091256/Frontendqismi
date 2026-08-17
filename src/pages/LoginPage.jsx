@@ -73,7 +73,6 @@ export default function LoginPage() {
       const res = await registerUser({ fullName: fullName.trim(), phone: phone.trim(), password, role, managerCode: managerCode.trim() });
       const { user } = res.data;
       localStorage.setItem('it_auth', JSON.stringify(user));
-      localStorage.removeItem('it_admin_key');
       toast.success(`Ro'yxatdan muvaffaqiyatli o'tdingiz! 🎉`);
       if (user.role === 'MANAGER') {
         navigate('/manager');
@@ -81,7 +80,7 @@ export default function LoginPage() {
         navigate('/admin');
       }
     } catch (err) {
-      const msg = err.response?.data?.message || "Ro'yxatdan o'tishda xatolik yuz berdi.";
+      const msg = err.response?.data?.message || (err.message === 'Network Error' ? "Server bilan aloqa o'rnatilmadi. Iltimos 10 soniya kuting va qayta urinib ko'ring." : "Ro'yxatdan o'tishda xatolik yuz berdi.");
       setError(msg);
       toast.error(msg);
     } finally {
