@@ -1,14 +1,31 @@
+﻿import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Navbar from './components/Navbar';
-import AdminPage from './pages/AdminPage';
-import ReportsPage from './pages/ReportsPage';
-import LoginPage from './pages/LoginPage';
-import TasksPage from './pages/TasksPage';
-import ManagerPage from './pages/ManagerPage';
-
 import AdminGuard from './components/AdminGuard';
 import ManagerGuard from './components/ManagerGuard';
+
+// Sahifalarni lazy-load qilish
+const LoginPage     = lazy(() => import('./pages/LoginPage'));
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const AdminPage     = lazy(() => import('./pages/AdminPage'));
+const ReportsPage   = lazy(() => import('./pages/ReportsPage'));
+const TasksPage     = lazy(() => import('./pages/TasksPage'));
+const ManagerPage   = lazy(() => import('./pages/ManagerPage'));
+const ProfilePage   = lazy(() => import('./pages/ProfilePage'));
+
+// Yuklanayotgan holat spinneri
+function PageLoader() {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      height: '60vh', color: '#94a3b8', fontSize: '1rem', gap: '0.5rem',
+    }}>
+      <span style={{ animation: 'spin 1s linear infinite', display: 'inline-block' }}>⏳</span>
+      Yuklanmoqda...
+    </div>
+  );
+}
 
 export default function App() {
   return (
@@ -31,52 +48,78 @@ export default function App() {
 
       <Navbar />
 
-      <Routes>
-        {/* Ildiz sahifa — login ga yo'naltiradi */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          {/* Ildiz sahifa — dashboard ga yo'naltiradi */}
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
-        {/* Kirish sahifasi */}
-        <Route path="/login" element={<LoginPage />} />
+          {/* Kirish sahifasi */}
+          <Route path="/login" element={<LoginPage />} />
 
-        {/* IT Support sahifalari */}
-        <Route
-          path="/admin"
-          element={
-            <AdminGuard>
-              <AdminPage />
-            </AdminGuard>
-          }
-        />
-        <Route
-          path="/reports"
-          element={
-            <AdminGuard>
-              <ReportsPage />
-            </AdminGuard>
-          }
-        />
-        <Route
-          path="/tasks"
-          element={
-            <AdminGuard>
-              <TasksPage />
-            </AdminGuard>
-          }
-        />
+          {/* Umumiy Dashboard (#2) */}
+          <Route
+            path="/dashboard"
+            element={
+              <AdminGuard>
+                <DashboardPage />
+              </AdminGuard>
+            }
+          />
 
-        {/* Manager sahifasi */}
-        <Route
-          path="/manager"
-          element={
-            <ManagerGuard>
-              <ManagerPage />
-            </ManagerGuard>
-          }
-        />
+          {/* Murojaatlar ro'yxati (Admin Panel) */}
+          <Route
+            path="/admin"
+            element={
+              <AdminGuard>
+                <AdminPage />
+              </AdminGuard>
+            }
+          />
 
-        {/* Noma'lum yo'l */}
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
+          {/* Hisobotlar */}
+          <Route
+            path="/reports"
+            element={
+              <AdminGuard>
+                <ReportsPage />
+              </AdminGuard>
+            }
+          />
+
+          {/* IT Support topshiriqlari */}
+          <Route
+            path="/tasks"
+            element={
+              <AdminGuard>
+                <TasksPage />
+              </AdminGuard>
+            }
+          />
+
+          {/* Profil va parol o'zgartirish (#6) */}
+          <Route
+            path="/profile"
+            element={
+              <AdminGuard>
+                <ProfilePage />
+              </AdminGuard>
+            }
+          />
+
+          {/* Manager sahifasi */}
+          <Route
+            path="/manager"
+            element={
+              <ManagerGuard>
+                <ManagerPage />
+              </ManagerGuard>
+            }
+          />
+
+          {/* Noma'lum yo'l */}
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }

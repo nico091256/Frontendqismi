@@ -1,16 +1,26 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAllProblems, resolveProblem, deleteProblem, updateProblem, exportExcel } from '../api/problems';
+import { 
+  getAllProblems, 
+  resolveProblem, 
+  deleteProblem, 
+  updateProblem, 
+  exportExcel,
+  assignProblem,
+  getITWorkers 
+} from '../api/problems';
 import ProblemCard from '../components/ProblemCard';
 import toast from 'react-hot-toast';
 import { 
   RefreshCw, LayoutDashboard, Inbox, CheckCheck, AlertTriangle, 
-  Search, Download, X, Wrench, Package, Briefcase, Building2, Phone, Hash, Eye
+  Search, Download, X, Wrench, Package, Briefcase, Building2, Phone, Hash, Eye,
+  CheckCircle, MessageSquare
 } from 'lucide-react';
 
 export default function AdminPage() {
   const navigate = useNavigate();
   const [problems, setProblems] = useState([]);
+  const [workers, setWorkers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState('ALL'); // ALL | "Texnik muammo" | "Jihoz so'rovi"
   const [statusFilter, setStatusFilter] = useState('ALL'); // ALL | NEW | RESOLVED
@@ -18,6 +28,11 @@ export default function AdminPage() {
   
   const [resolvingId, setResolvingId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [assigningId, setAssigningId] = useState(null);
+
+  // Resolve Modal State (#3)
+  const [resolvingProblem, setResolvingProblem] = useState(null);
+  const [resolveNote, setResolveNote] = useState('');
 
   // Edit Modal State
   const [editingProblem, setEditingProblem] = useState(null);
@@ -27,15 +42,29 @@ export default function AdminPage() {
     position: '', objectName: '', phone: '',
     room: '', computer: '', description: '',
     requestedItem: '', quantity: '1',
-    status: 'NEW'
+    status: 'NEW',
+    resolveNote: ''
   });
 
   // ── Fetch all ─────────────────────────────────────────
   const fetchProblems = useCallback(async (showToast = false) => {
     setLoading(true);
     try {
-      const res = await getAllProblems();
-      setProblems(res.data.problems);
+      const [resProb, resWorkers] = await Promise.allSettled([
+        getAllProblems(),
+        getITWorkers()
+      ]);
+
+      if (resProb.status === 'fulfilled') {
+        setProblems(resProb.value.data.problems || []);
+      } else {
+        throw resProb.reason;
+      }
+
+      if (resWorkers.status === 'fulfilled') {
+        setWorkers(resWorkers.value.data.users || []);
+      }
+
       if (showToast) toast.success("Ma'lumotlar yangilandi! 🔄");
     } catch (err) {
       if (err.response?.status === 401) {
@@ -54,19 +83,46 @@ export default function AdminPage() {
     fetchProblems();
   }, [fetchProblems]);
 
-  // ── Resolve ───────────────────────────────────────────
-  const handleResolve = async (id) => {
+  // ── Resolve Handlers (#3) ──────────────────────────────
+  const handleOpenResolveModal = (problem) => {
+    setResolvingProblem(problem);
+    setResolveNote('');
+  };
+
+  const handleConfirmResolve = async (e) => {
+    e?.preventDefault();
+    if (!resolvingProblem) return;
+
+    const id = resolvingProblem.id;
     setResolvingId(id);
     try {
-      const res = await resolveProblem(id);
+      const res = await resolveProblem(id, resolveNote);
       setProblems((prev) =>
         prev.map((p) => (p.id === id ? res.data.problem : p))
       );
-      toast.success('Murojaat hal qilindi ✅');
+      toast.success('Murojaat hal qilindi! ✅');
+      setResolvingProblem(null);
+      setResolveNote('');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Xatolik yuz berdi.');
     } finally {
       setResolvingId(null);
+    }
+  };
+
+  // ── Assign Worker (#7) ─────────────────────────────────
+  const handleAssignWorker = async (problemId, userId) => {
+    setAssigningId(problemId);
+    try {
+      const res = await assignProblem(problemId, userId);
+      setProblems((prev) =>
+        prev.map((p) => (p.id === problemId ? res.data.problem : p))
+      );
+      toast.success(userId ? "Xodimga biriktirildi! 👤" : "Biriktirish bekor qilindi.");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Biriktirishda xatolik.");
+    } finally {
+      setAssigningId(null);
     }
   };
 
@@ -121,7 +177,8 @@ export default function AdminPage() {
       description: problem.description || '',
       requestedItem: problem.requestedItem || '',
       quantity: problem.quantity?.toString() || '1',
-      status: problem.status || 'NEW'
+      status: problem.status || 'NEW',
+      resolveNote: problem.resolveNote || ''
     });
   };
 
@@ -174,129 +231,97 @@ export default function AdminPage() {
 
   // ── Local Filter and Search ───────────────────────────
   const filtered = problems.filter((p) => {
-    // 1. Type
     if (typeFilter !== 'ALL' && p.type !== typeFilter) return false;
-    // 2. Status
     if (statusFilter !== 'ALL' && p.status !== statusFilter) return false;
-    // 3. Search
-    if (searchTerm.trim()) {
-      const term = searchTerm.toLowerCase();
-      const fullName = `${p.lastName} ${p.firstName} ${p.middleName}`.toLowerCase();
-      const ticket = (p.ticketNumber || '').toLowerCase();
-      const obj = (p.objectName || '').toLowerCase();
-      const pos = (p.position || '').toLowerCase();
-      const ph = (p.phone || '').toLowerCase();
-      const desc = (p.description || '').toLowerCase();
-      const item = (p.requestedItem || '').toLowerCase();
-      const room = (p.room || '').toLowerCase();
-      const comp = (p.computer || '').toLowerCase();
 
-      return (
-        fullName.includes(term) ||
-        ticket.includes(term) ||
-        obj.includes(term) ||
-        pos.includes(term) ||
-        ph.includes(term) ||
-        desc.includes(term) ||
-        item.includes(term) ||
-        room.includes(term) ||
-        comp.includes(term)
-      );
-    }
-    return true;
+    if (!searchTerm.trim()) return true;
+    const q = searchTerm.toLowerCase();
+
+    return (
+      p.ticketNumber?.toLowerCase().includes(q) ||
+      p.lastName?.toLowerCase().includes(q) ||
+      p.firstName?.toLowerCase().includes(q) ||
+      p.middleName?.toLowerCase().includes(q) ||
+      p.position?.toLowerCase().includes(q) ||
+      p.objectName?.toLowerCase().includes(q) ||
+      p.phone?.toLowerCase().includes(q) ||
+      p.room?.toLowerCase().includes(q) ||
+      p.computer?.toLowerCase().includes(q) ||
+      p.description?.toLowerCase().includes(q) ||
+      p.requestedItem?.toLowerCase().includes(q) ||
+      p.resolveNote?.toLowerCase().includes(q) ||
+      p.assignedUser?.fullName?.toLowerCase().includes(q)
+    );
   });
 
   return (
-    <div className="page">
+    <div className="page admin-page">
       <div className="container">
         
-        {/* Page header */}
-        <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+        {/* Page Header */}
+        <div className="admin-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16, marginBottom: 24 }}>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
-              <LayoutDashboard size={24} color="var(--accent-light)" />
-              <h1>IT Yordam CRM Panel</h1>
-            </div>
-            <p className="subtitle">Murojaatlarni boshqarish va tahrirlash markazi</p>
+            <h1 style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '1.6rem', fontWeight: 700 }}>
+              <LayoutDashboard size={24} color="#3b82f6" />
+              IT Qo'llab-quvvatlash Paneli
+            </h1>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: 4 }}>
+              Barcha kelib tushgan texnik muammolar va jihoz so'rovlarini boshqarish
+            </p>
           </div>
 
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button className="btn btn-success" onClick={handleExportExcel} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Download size={16} />
-              Excel yuklab olish
-            </button>
-            <button className="btn btn-ghost" onClick={() => fetchProblems(true)} disabled={loading} style={{ display: 'flex', alignItems: 'center', gap: 6, borderColor: 'var(--border-subtle)' }}>
+          {/* Action buttons */}
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+            <button className="btn btn-ghost" onClick={() => fetchProblems(true)} disabled={loading}>
               <RefreshCw size={15} className={loading ? 'spin' : ''} />
               Yangilash
+            </button>
+            <button className="btn btn-primary" onClick={handleExportExcel}>
+              <Download size={15} />
+              Excel yuklab olish
             </button>
           </div>
         </div>
 
         {/* Stats bar */}
-        <div className="stats-bar" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 24 }}>
-          <div className="stat-chip">
-            <div className="stat-icon" style={{ background: 'rgba(59,130,246,0.12)' }}>
-              <Inbox size={18} color="var(--accent-light)" />
-            </div>
-            <div>
-              <div className="stat-value">{totalCount}</div>
-              <div className="stat-label">Jami murojaatlar</div>
-            </div>
+        <div className="stats-bar" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 14, marginBottom: 24 }}>
+          <div className="stat-card">
+            <span className="stat-label">Jami Murojaatlar</span>
+            <span className="stat-value" style={{ color: '#38bdf8' }}>{totalCount}</span>
           </div>
-          <div className="stat-chip">
-            <div className="stat-icon" style={{ background: 'var(--warning-bg)' }}>
-              <AlertTriangle size={18} color="var(--warning)" />
-            </div>
-            <div>
-              <div className="stat-value" style={{ color: 'var(--warning)' }}>{newCount}</div>
-              <div className="stat-label">Yangilar (Kutilmoqda)</div>
-            </div>
+          <div className="stat-card">
+            <span className="stat-label">🟡 Yangi (Kutilmoqda)</span>
+            <span className="stat-value" style={{ color: 'var(--warning)' }}>{newCount}</span>
           </div>
-          <div className="stat-chip">
-            <div className="stat-icon" style={{ background: 'var(--success-bg)' }}>
-              <CheckCheck size={18} color="var(--success)" />
-            </div>
-            <div>
-              <div className="stat-value" style={{ color: 'var(--success)' }}>{resolvedCount}</div>
-              <div className="stat-label">Hal qilinganlar</div>
-            </div>
+          <div className="stat-card">
+            <span className="stat-label">✅ Hal Qilindi</span>
+            <span className="stat-value" style={{ color: 'var(--success)' }}>{resolvedCount}</span>
           </div>
-          <div className="stat-chip">
-            <div className="stat-icon" style={{ background: 'rgba(99,102,241,0.12)' }}>
-              <Wrench size={18} color="#818cf8" />
-            </div>
-            <div>
-              <div className="stat-value" style={{ color: '#818cf8' }}>{tmCount}</div>
-              <div className="stat-label">Texnik muammolar</div>
-            </div>
+          <div className="stat-card">
+            <span className="stat-label">🛠️ Texnik Muammo</span>
+            <span className="stat-value" style={{ color: '#818cf8' }}>{tmCount}</span>
           </div>
-          <div className="stat-chip">
-            <div className="stat-icon" style={{ background: 'rgba(16,185,129,0.12)' }}>
-              <Package size={18} color="#34d399" />
-            </div>
-            <div>
-              <div className="stat-value" style={{ color: '#34d399' }}>{jsCount}</div>
-              <div className="stat-label">Jihoz so'rovlari</div>
-            </div>
+          <div className="stat-card">
+            <span className="stat-label">📦 Jihoz So'rovi</span>
+            <span className="stat-value" style={{ color: '#34d399' }}>{jsCount}</span>
           </div>
         </div>
 
-        {/* CRM Search & Filters */}
-        <div className="crm-filters" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', padding: 18, borderRadius: 'var(--radius-lg)', marginBottom: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
-          
+        {/* Filter and Search Bar */}
+        <div className="filter-controls card" style={{ padding: '16px 20px', marginBottom: 24 }}>
           {/* Search row */}
-          <div style={{ position: 'relative', width: '100%' }}>
+          <div style={{ position: 'relative', marginBottom: 16 }}>
             <Search size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-            <input 
+            <input
               type="text"
               className="form-input"
-              placeholder="Qidiruv (Ism, telefon, chipta raqami, xona, muammo yoki jihoz)..."
+              placeholder="Ticket raqami, xodim ismi, telefon, xona, jihoz yoki izoh bo'yicha qidiring..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ paddingLeft: 42, background: 'var(--bg-input)', borderColor: 'var(--border-subtle)', borderRadius: 10 }}
+              style={{ paddingLeft: 42, paddingRight: searchTerm ? 40 : 14, borderRadius: 10, background: 'var(--bg-input)' }}
             />
             {searchTerm && (
-              <button onClick={() => setSearchTerm('')} style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+              <button onClick={() => setSearchTerm('')} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
                 <X size={16} />
               </button>
             )}
@@ -354,16 +379,67 @@ export default function AdminPage() {
               <ProblemCard
                 key={problem.id}
                 problem={problem}
-                onResolve={handleResolve}
+                workers={workers}
+                onResolve={handleOpenResolveModal}
+                onAssign={handleAssignWorker}
                 onDelete={handleDelete}
                 onEdit={openEditModal}
                 resolving={resolvingId === problem.id}
                 deleting={deletingId === problem.id}
+                assigning={assigningId}
               />
             ))}
           </div>
         )}
       </div>
+
+      {/* ════ HAL QILISH MODAL OYNASI (#3 RESOLVE NOTE MODAL) ════ */}
+      {resolvingProblem && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(5px)', display: 'grid', placeItems: 'center', zIndex: 110, padding: 16 }}>
+          <div style={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 'var(--radius-lg)', width: '100%', maxWidth: 480, padding: 24, boxShadow: '0 25px 60px rgba(0,0,0,0.6)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: 14, marginBottom: 16 }}>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'white', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <CheckCircle size={20} color="#10b981" />
+                Murojaatni Hal Qilish: {resolvingProblem.ticketNumber}
+              </h3>
+              <button onClick={() => setResolvingProblem(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleConfirmResolve}>
+              <div style={{ marginBottom: 16, fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
+                <strong>{resolvingProblem.lastName} {resolvingProblem.firstName}</strong> ({resolvingProblem.objectName || resolvingProblem.room || '—'}) murojaati holatini <strong>"Hal qilindi"</strong>ga o'tkazmoqdasiz.
+              </div>
+
+              <div className="form-group" style={{ marginBottom: 20 }}>
+                <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <MessageSquare size={14} color="#818cf8" />
+                  Qanday hal qilindi? / Bajarilgan ishlar (ixtiyoriy)
+                </label>
+                <textarea
+                  className="form-textarea"
+                  placeholder="Masalan: Monitor kabeli almashtirildi, drayver o'rnatildi..."
+                  value={resolveNote}
+                  onChange={(e) => setResolveNote(e.target.value)}
+                  style={{ background: 'var(--bg-input)', borderRadius: 8, minHeight: 90 }}
+                  autoFocus
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                <button type="button" className="btn btn-ghost" onClick={() => setResolvingProblem(null)}>
+                  Bekor qilish
+                </button>
+                <button type="submit" className="btn btn-success" disabled={resolvingId === resolvingProblem.id}>
+                  <CheckCircle size={15} />
+                  {resolvingId === resolvingProblem.id ? 'Saqlanmoqda...' : 'Hal etildi deb belgilash'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* ════ TAHRIRLASH MODAL OYNASI (EDIT MODAL) ════ */}
       {editingProblem && (
@@ -452,6 +528,12 @@ export default function AdminPage() {
               <div className="form-group" style={{ marginBottom: 14 }}>
                 <label className="form-label">{editForm.type === 'Texnik muammo' ? 'Muammo tavsifi' : 'Izoh'}</label>
                 <textarea name="description" className="form-textarea" value={editForm.description} onChange={handleEditChange} style={{ background: 'var(--bg-input)', borderRadius: 8, minHeight: 70 }} />
+              </div>
+
+              {/* Resolve note (edit) */}
+              <div className="form-group" style={{ marginBottom: 14 }}>
+                <label className="form-label">Hal qilish izohi (Resolve Note)</label>
+                <textarea name="resolveNote" className="form-textarea" placeholder="Bajarilgan ishlar..." value={editForm.resolveNote} onChange={handleEditChange} style={{ background: 'var(--bg-input)', borderRadius: 8, minHeight: 60 }} />
               </div>
 
               {/* Status */}

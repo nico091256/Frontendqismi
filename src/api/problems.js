@@ -21,10 +21,12 @@ api.interceptors.request.use((config) => {
 });
 
 // ── Auth ─────────────────────────────────────────────────────────────
-export const registerUser = (data) => api.post('/auth/register', data);
-export const loginUser    = (data) => api.post('/auth/login', data);
-export const logoutUser   = ()     => api.post('/auth/logout');
-export const getMe        = ()     => api.get('/auth/me');
+export const registerUser      = (data) => api.post('/auth/register', data);
+export const loginUser         = (data) => api.post('/auth/login', data);
+export const logoutUser        = ()     => api.post('/auth/logout');
+export const getMe             = ()     => api.get('/auth/me');
+export const updateProfile     = (data) => api.patch('/auth/profile', data);
+export const changePassword    = (data) => api.patch('/auth/change-password', data);
 
 // ── Foydalanuvchilar (Manager uchun) ─────────────────────────────────
 export const getITWorkers   = ()   => api.get('/users?role=IT_SUPPORT');
@@ -40,8 +42,11 @@ export const deleteTask       = (id)           => api.delete(`/tasks/${id}`);
 export const createProblem  = (data)     => api.post('/problems', data);
 export const getAllProblems  = ()         => api.get('/problems');
 export const getProblemById = (id)       => api.get(`/problems/${id}`);
-export const resolveProblem = (id)       => api.patch(`/problems/${id}/resolve`);
+export const resolveProblem = (id, note) => api.patch(`/problems/${id}/resolve`, { resolveNote: note });
 export const deleteProblem  = (id)       => api.delete(`/problems/${id}`);
 export const updateProblem  = (id, data) => api.patch(`/problems/${id}`, data);
 export const exportExcel    = ()         => api.get('/problems/export', { responseType: 'blob' });
 export const getStats       = (year)     => api.get(`/stats${year ? `?year=${year}` : ''}`);
+export const assignProblem  = (id, userId) => api.patch(`/problems/${id}/assign`, { userId });
+export const getNewCount    = (since)    => api.get(`/problems/new-count${since ? `?since=${since}` : ''}`);
+export const checkTicket    = (ticket)   => api.get(`/problems/check/${ticket}`);
