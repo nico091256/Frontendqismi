@@ -1,11 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getITWorkers, deleteITWorker, getTasks, createTask, deleteTask } from '../api/problems';
+import { 
+  getITWorkers, deleteITWorker, getTasks, createTask, deleteTask,
+  getRegistrationStatus, setRegistrationStatus
+} from '../api/problems';
 import toast from 'react-hot-toast';
 import {
   UserCog, ClipboardList, Plus, Trash2, RefreshCw,
   User, Phone, Calendar, AlertTriangle, Inbox,
-  CheckCircle2, Clock, PlayCircle, X, Send, ChevronDown
+  CheckCircle2, Clock, PlayCircle, X, Send, ChevronDown,
+  Lock, LockOpen, ShieldCheck
 } from 'lucide-react';
 
 const PRIORITY_CONFIG = {
@@ -37,6 +41,8 @@ export default function ManagerPage() {
   const [workers, setWorkers] = useState([]);
   const [tasks, setTasks]     = useState([]);
   const [loading, setLoading] = useState(true);
+  const [regOpen, setRegOpen] = useState(true);
+  const [togglingReg, setTogglingReg] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [taskForm, setTaskForm]   = useState(emptyTask);
   const [submitting, setSubmitting] = useState(false);
@@ -48,9 +54,16 @@ export default function ManagerPage() {
   const fetchAll = useCallback(async (showToast = false) => {
     setLoading(true);
     try {
-      const [wRes, tRes] = await Promise.all([getITWorkers(), getTasks()]);
+      const [wRes, tRes, regRes] = await Promise.all([
+        getITWorkers(), 
+        getTasks(),
+        getRegistrationStatus()
+      ]);
       setWorkers(wRes.data.users || []);
       setTasks(tRes.data.tasks || []);
+      if (regRes.data?.registrationOpen !== undefined) {
+        setRegOpen(regRes.data.registrationOpen);
+      }
       if (showToast) toast.success("Ma'lumotlar yangilandi!");
     } catch (err) {
       if (err.response?.status === 401) {
@@ -65,6 +78,21 @@ export default function ManagerPage() {
   }, [navigate]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  // ── Registratsiyani yoqish/o'chirish (ON/OFF) ───────────────────────
+  const handleToggleRegistration = async () => {
+    const nextState = !regOpen;
+    setTogglingReg(true);
+    try {
+      const res = await setRegistrationStatus(nextState);
+      setRegOpen(res.data.registrationOpen);
+      toast.success(res.data.message || (nextState ? "Ro'yxatdan o'tish OCHILDI 🔓" : "Ro'yxatdan o'tish YOPIB QO'YILDI 🔒"));
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Sozlamani o'zgartirishda xatolik");
+    } finally {
+      setTogglingReg(false);
+    }
+  };
 
   // ── Create task ────────────────────────────────────────────────────
   const handleCreateTask = async (e) => {
@@ -178,6 +206,78 @@ export default function ManagerPage() {
               </div>
             </div>
           ))}
+        </div>
+
+        {/* ── Xavfsizlik & Yangi hisob yaratish (Registratsiya) Boshqaruvi ── */}
+        <div className="card" style={{
+          padding: '16px 20px',
+          marginBottom: 24,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: 16,
+          border: `1px solid ${regOpen ? 'rgba(16,185,129,0.35)' : 'rgba(239,68,68,0.35)'}`,
+          background: regOpen ? 'rgba(16,185,129,0.05)' : 'rgba(239,68,68,0.05)',
+          boxShadow: regOpen ? '0 4px 20px rgba(16,185,129,0.08)' : '0 4px 20px rgba(239,68,68,0.08)',
+          borderRadius: 16
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div style={{
+              width: 44, height: 44, borderRadius: 12,
+              background: regOpen ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)',
+              border: `1px solid ${regOpen ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`,
+              display: 'grid', placeItems: 'center', flexShrink: 0
+            }}>
+              {regOpen ? <LockOpen size={20} color="#10b981" /> : <Lock size={20} color="#ef4444" />}
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                  Yangi hisob yaratish (Registratsiya)
+                </h3>
+                <span style={{
+                  fontSize: '0.72rem', fontWeight: 800, padding: '2px 8px', borderRadius: 99,
+                  background: regOpen ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)',
+                  color: regOpen ? '#34d399' : '#f87171',
+                  border: `1px solid ${regOpen ? 'rgba(16,185,129,0.4)' : 'rgba(239,68,68,0.4)'}`
+                }}>
+                  {regOpen ? '🟢 OCHIQ (ON)' : '🔴 YOPIQ (OFF)'}
+                </span>
+              </div>
+              <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                {regOpen 
+                  ? "Hozirda yangi xodimlar ro'yxatdan o'tishi mumkin. Login sahifasida ro'yxatdan o'tish formasi faol."
+                  : "Yangi hisob yaratish to'xtatilgan. Yangi xodimlar ro'yxatdan o'ta olmaydi, faqat mavjud xodimlar kirishi mumkin."}
+              </p>
+            </div>
+          </div>
+
+          {/* Switch Button */}
+          <button
+            type="button"
+            onClick={handleToggleRegistration}
+            disabled={togglingReg}
+            style={{
+              padding: '10px 18px',
+              borderRadius: 12,
+              border: 'none',
+              background: regOpen ? 'linear-gradient(135deg, #ef4444, #dc2626)' : 'linear-gradient(135deg, #10b981, #059669)',
+              color: '#fff',
+              fontWeight: 700,
+              fontSize: '0.85rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              cursor: togglingReg ? 'default' : 'pointer',
+              boxShadow: regOpen ? '0 4px 15px rgba(239,68,68,0.3)' : '0 4px 15px rgba(16,185,129,0.3)',
+              transition: 'all 0.2s',
+              opacity: togglingReg ? 0.7 : 1
+            }}
+          >
+            {regOpen ? <Lock size={15} /> : <LockOpen size={15} />}
+            <span>{regOpen ? "Ro'yxatdan o'tishni YOPISH (OFF)" : "Ro'yxatdan o'tishni OCHISH (ON)"}</span>
+          </button>
         </div>
 
         {/* Tabs */}

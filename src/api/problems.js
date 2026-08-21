@@ -20,13 +20,15 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// ── Auth ─────────────────────────────────────────────────────────────
-export const registerUser      = (data) => api.post('/auth/register', data);
-export const loginUser         = (data) => api.post('/auth/login', data);
-export const logoutUser        = ()     => api.post('/auth/logout');
-export const getMe             = ()     => api.get('/auth/me');
-export const updateProfile     = (data) => api.patch('/auth/profile', data);
-export const changePassword    = (data) => api.patch('/auth/change-password', data);
+// ── Auth & Registratsiya Boshqaruvi ──────────────────────────────────
+export const registerUser          = (data) => api.post('/auth/register', data);
+export const loginUser             = (data) => api.post('/auth/login', data);
+export const logoutUser            = ()     => api.post('/auth/logout');
+export const getMe                 = ()     => api.get('/auth/me');
+export const updateProfile         = (data) => api.patch('/auth/profile', data);
+export const changePassword        = (data) => api.patch('/auth/change-password', data);
+export const getRegistrationStatus = ()     => api.get('/auth/registration-status');
+export const setRegistrationStatus = (isOpen) => api.patch('/auth/registration-status', { registrationOpen: isOpen });
 
 // ── Foydalanuvchilar (Manager uchun) ─────────────────────────────────
 export const getITWorkers   = ()   => api.get('/users?role=IT_SUPPORT');

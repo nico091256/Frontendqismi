@@ -1,20 +1,32 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { registerUser, loginUser } from '../api/problems';
+import { registerUser, loginUser, getRegistrationStatus } from '../api/problems';
 import toast from 'react-hot-toast';
 import {
   Phone, Lock, User, Eye, EyeOff, ArrowRight,
-  ShieldCheck, KeyRound, Sparkles, Headphones, UserCog
+  ShieldCheck, KeyRound, Sparkles, Headphones, UserCog, LockKeyhole
 } from 'lucide-react';
 import Logo from '../components/Logo';
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const [tab, setTab] = useState('login'); // 'login' | 'register'
+  const [registrationOpen, setRegistrationOpen] = useState(true);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showManagerCode, setShowManagerCode] = useState(false);
   const [error, setError] = useState('');
+
+  // Fetch registration status on mount
+  useEffect(() => {
+    getRegistrationStatus()
+      .then(res => {
+        if (res.data?.registrationOpen !== undefined) {
+          setRegistrationOpen(res.data.registrationOpen);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Login form
   const [loginForm, setLoginForm] = useState({ phone: '', password: '' });
@@ -156,12 +168,13 @@ export default function LoginPage() {
                 flex: 1, padding: '8px 12px', borderRadius: 8, border: 'none',
                 cursor: 'pointer', fontSize: '0.88rem', fontWeight: 600,
                 transition: 'all 0.2s',
-                background: tab === 'register' ? 'var(--accent)' : 'transparent',
-                color: tab === 'register' ? 'white' : 'var(--text-muted)',
+                background: tab === 'register' ? (registrationOpen ? 'var(--accent)' : 'rgba(239,68,68,0.15)') : 'transparent',
+                color: tab === 'register' ? (registrationOpen ? 'white' : '#f87171') : (registrationOpen ? 'var(--text-muted)' : 'rgba(239,68,68,0.7)'),
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
               }}
             >
-              <Sparkles size={15} /> Ro'yxatdan o'tish
+              {registrationOpen ? <Sparkles size={15} /> : <Lock size={14} color="#ef4444" />}
+              {registrationOpen ? "Ro'yxatdan o'tish" : "Ro'yxatdan o'tish (Yopiq)"}
             </button>
           </div>
 
@@ -173,7 +186,7 @@ export default function LoginPage() {
             </div>
           )}
 
-          {/* ── LOGIN FORM ── */}
+          {/* ── LOGIN FORM (Doim mavjud) ── */}
           {tab === 'login' && (
             <form onSubmit={handleLogin} noValidate>
               <div className="form-group" style={{ marginBottom: 16 }}>
@@ -223,8 +236,34 @@ export default function LoginPage() {
             </form>
           )}
 
-          {/* ── REGISTER FORM ── */}
-          {tab === 'register' && (
+          {/* ── REGISTER CLOSED NOTICE (Agar rahbar yopib qo'ygan bo'lsa) ── */}
+          {tab === 'register' && !registrationOpen && (
+            <div style={{ textAlign: 'center', padding: '20px 8px' }}>
+              <div style={{
+                width: 60, height: 60, borderRadius: '50%',
+                background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)',
+                display: 'grid', placeItems: 'center', margin: '0 auto 16px'
+              }}>
+                <Lock size={26} color="#ef4444" />
+              </div>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: 8 }}>
+                Yangi hisob yaratish yopiq 🔒
+              </h3>
+              <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: 24 }}>
+                Hozirda yangi xodimlarni ro'yxatdan o'tkazish tashkilot rahbari (Manager) tomonidan vaqtincha to'xtatilgan. Tizimga kirish uchun mavjud hisobingizdan foydalaning yoki rahbaringizga murojaat qiling.
+              </p>
+              <button
+                type="button"
+                onClick={() => setTab('login')}
+                className="btn btn-primary btn-full btn-lg"
+              >
+                <KeyRound size={16} /> Mavjud hisob bilan kirish
+              </button>
+            </div>
+          )}
+
+          {/* ── REGISTER FORM (Faqat rahbar ochganida) ── */}
+          {tab === 'register' && registrationOpen && (
             <form onSubmit={handleRegister} noValidate>
               <div className="form-group" style={{ marginBottom: 14 }}>
                 <label className="form-label" htmlFor="reg-name">Ism, Familiya *</label>
