@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import { getChatMessages, sendChatMessage } from '../api/problems';
 import toast from 'react-hot-toast';
 import { 
@@ -7,6 +8,7 @@ import {
 } from 'lucide-react';
 
 export default function FloatingChat() {
+  const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [inputMsg, setInputMsg] = useState('');
@@ -29,15 +31,20 @@ export default function FloatingChat() {
     }
   }, [isOpen]);
 
-  // Read current user
+  // Read current user whenever route/location changes or auth updates
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem('it_auth');
-      if (raw) setCurrentUser(JSON.parse(raw));
-    } catch {
-      setCurrentUser(null);
-    }
-  }, []);
+    const readUser = () => {
+      try {
+        const raw = localStorage.getItem('it_auth');
+        setCurrentUser(raw ? JSON.parse(raw) : null);
+      } catch {
+        setCurrentUser(null);
+      }
+    };
+    readUser();
+    window.addEventListener('storage', readUser);
+    return () => window.removeEventListener('storage', readUser);
+  }, [location]);
 
   // Fetch messages from backend
   const fetchMessages = useCallback(async () => {
@@ -170,8 +177,8 @@ export default function FloatingChat() {
     }
   };
 
-  // Only render if user is logged in
-  if (!currentUser) return null;
+  // Only render if user is logged in and not on login page
+  if (!currentUser || location.pathname === '/login') return null;
 
   return (
     <>
