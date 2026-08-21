@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, BarChart3, LogOut, ClipboardList, 
-  UserCog, Headphones, Bell, User, Gauge, Menu, X, Laptop
+  UserCog, Headphones, Bell, User, Gauge, Menu, X, Laptop, MessageSquare
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { logoutUser, getNewCount } from '../api/problems';

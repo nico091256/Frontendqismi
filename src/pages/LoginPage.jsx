@@ -4,7 +4,7 @@ import { registerUser, loginUser } from '../api/problems';
 import toast from 'react-hot-toast';
 import {
   Phone, Lock, User, Eye, EyeOff, ArrowRight,
-  ShieldCheck, KeyRound, Sparkles
+  ShieldCheck, KeyRound, Sparkles, Headphones, UserCog
 } from 'lucide-react';
 import Logo from '../components/Logo';
 

@@ -59,3 +59,8 @@ export const updateInventoryItem   = (id, data)   => api.patch(`/inventory/${id}
 export const deleteInventoryItem   = (id)         => api.delete(`/inventory/${id}`);
 export const exportInventoryExcel  = ()           => api.get('/inventory/export', { responseType: 'blob' });
 
+// ── IT Jamoa Chati (Ichki Xodimlar Chati) ─────────────────────────
+export const getChatMessages       = ()           => api.get('/chat');
+export const sendChatMessage       = (message, image) => api.post('/chat', { message, image });
+
+

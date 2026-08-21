@@ -108,6 +108,12 @@ h3 { font-size: 1.1rem; font-weight: 600; }
   font-weight: 700;
   font-size: 1.1rem;
   letter-spacing: -0.02em;
+  white-space: nowrap !important;
+  flex-shrink: 0;
+}
+.brand-title {
+  white-space: nowrap !important;
+  font-weight: 800;
 }
 .navbar-brand .brand-icon {
   width: 36px; height: 36px;

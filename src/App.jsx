@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Navbar from './components/Navbar';
+import FloatingChat from './components/FloatingChat';
 import AdminGuard from './components/AdminGuard';
 import ManagerGuard from './components/ManagerGuard';
 
@@ -14,6 +15,7 @@ const TasksPage     = lazy(() => import('./pages/TasksPage'));
 const ManagerPage   = lazy(() => import('./pages/ManagerPage'));
 const ProfilePage   = lazy(() => import('./pages/ProfilePage'));
 const InventoryPage = lazy(() => import('./pages/InventoryPage'));
+const ChatPage      = lazy(() => import('./pages/ChatPage'));
 
 // Yuklanayotgan holat spinneri
 function PageLoader() {
@@ -107,6 +109,16 @@ export default function App() {
             }
           />
 
+          {/* IT Jamoa Chati */}
+          <Route
+            path="/chat"
+            element={
+              <AdminGuard>
+                <ChatPage />
+              </AdminGuard>
+            }
+          />
+
           {/* Profil va parol o'zgartirish (#6) */}
           <Route
             path="/profile"
@@ -131,6 +143,9 @@ export default function App() {
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </Suspense>
+
+      {/* ── O'ng tomon pastdagi IT Chat Vidjeti ── */}
+      <FloatingChat />
     </BrowserRouter>
   );
 }
