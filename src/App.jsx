@@ -30,7 +30,7 @@ function PageLoader() {
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/admin">
       {/* Global toast notifications */}
       <Toaster
         position="top-right"
