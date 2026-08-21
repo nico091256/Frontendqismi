@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   getAllProblems, 
@@ -283,27 +283,121 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* Stats bar */}
-        <div className="stats-bar" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 14, marginBottom: 24 }}>
-          <div className="stat-card">
-            <span className="stat-label">Jami Murojaatlar</span>
-            <span className="stat-value" style={{ color: '#38bdf8' }}>{totalCount}</span>
+        {/* ── Stats Metric Cards Bar ── */}
+        <div className="stats-bar" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 12, marginBottom: 24 }}>
+          {/* Jami Murojaatlar */}
+          <div 
+            className="card" 
+            onClick={() => { setTypeFilter('ALL'); setStatusFilter('ALL'); }}
+            style={{ 
+              padding: '16px 18px', 
+              borderLeft: '4px solid #38bdf8', 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              cursor: 'pointer',
+              background: (typeFilter === 'ALL' && statusFilter === 'ALL') ? 'rgba(56, 189, 248, 0.08)' : 'var(--bg-card)'
+            }}
+          >
+            <div>
+              <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '0.5px' }}>JAMI MUROJAATLAR</div>
+              <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#38bdf8', marginTop: 2 }}>{totalCount}</div>
+            </div>
+            <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(56, 189, 248, 0.12)', display: 'grid', placeItems: 'center' }}>
+              <Inbox size={19} color="#38bdf8" />
+            </div>
           </div>
-          <div className="stat-card">
-            <span className="stat-label">🟡 Yangi (Kutilmoqda)</span>
-            <span className="stat-value" style={{ color: 'var(--warning)' }}>{newCount}</span>
+
+          {/* Yangi (Kutilmoqda) */}
+          <div 
+            className="card" 
+            onClick={() => setStatusFilter('NEW')}
+            style={{ 
+              padding: '16px 18px', 
+              borderLeft: '4px solid #f59e0b', 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              cursor: 'pointer',
+              background: statusFilter === 'NEW' ? 'rgba(245, 158, 11, 0.1)' : 'var(--bg-card)'
+            }}
+          >
+            <div>
+              <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '0.5px' }}>YANGI (KUTILMOQDA)</div>
+              <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#f59e0b', marginTop: 2 }}>{newCount}</div>
+            </div>
+            <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(245, 158, 11, 0.12)', display: 'grid', placeItems: 'center' }}>
+              <AlertTriangle size={19} color="#f59e0b" />
+            </div>
           </div>
-          <div className="stat-card">
-            <span className="stat-label">✅ Hal Qilindi</span>
-            <span className="stat-value" style={{ color: 'var(--success)' }}>{resolvedCount}</span>
+
+          {/* Hal Qilindi */}
+          <div 
+            className="card" 
+            onClick={() => setStatusFilter('RESOLVED')}
+            style={{ 
+              padding: '16px 18px', 
+              borderLeft: '4px solid #10b981', 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              cursor: 'pointer',
+              background: statusFilter === 'RESOLVED' ? 'rgba(16, 185, 129, 0.1)' : 'var(--bg-card)'
+            }}
+          >
+            <div>
+              <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '0.5px' }}>HAL QILINDI</div>
+              <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#10b981', marginTop: 2 }}>{resolvedCount}</div>
+            </div>
+            <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(16, 185, 129, 0.12)', display: 'grid', placeItems: 'center' }}>
+              <CheckCircle size={19} color="#10b981" />
+            </div>
           </div>
-          <div className="stat-card">
-            <span className="stat-label">🛠️ Texnik Muammo</span>
-            <span className="stat-value" style={{ color: '#818cf8' }}>{tmCount}</span>
+
+          {/* Texnik Muammo */}
+          <div 
+            className="card" 
+            onClick={() => setTypeFilter('Texnik muammo')}
+            style={{ 
+              padding: '16px 18px', 
+              borderLeft: '4px solid #818cf8', 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              cursor: 'pointer',
+              background: typeFilter === 'Texnik muammo' ? 'rgba(129, 140, 248, 0.1)' : 'var(--bg-card)'
+            }}
+          >
+            <div>
+              <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '0.5px' }}>TEXNIK MUAMMO</div>
+              <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#818cf8', marginTop: 2 }}>{tmCount}</div>
+            </div>
+            <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(129, 140, 248, 0.12)', display: 'grid', placeItems: 'center' }}>
+              <Wrench size={19} color="#818cf8" />
+            </div>
           </div>
-          <div className="stat-card">
-            <span className="stat-label">📦 Jihoz So'rovi</span>
-            <span className="stat-value" style={{ color: '#34d399' }}>{jsCount}</span>
+
+          {/* Jihoz So'rovi */}
+          <div 
+            className="card" 
+            onClick={() => setTypeFilter("Jihoz so'rovi")}
+            style={{ 
+              padding: '16px 18px', 
+              borderLeft: '4px solid #34d399', 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              cursor: 'pointer',
+              background: typeFilter === "Jihoz so'rovi" ? 'rgba(52, 211, 153, 0.1)' : 'var(--bg-card)'
+            }}
+          >
+            <div>
+              <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '0.5px' }}>JIHOZ SO'ROVI</div>
+              <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#34d399', marginTop: 2 }}>{jsCount}</div>
+            </div>
+            <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(52, 211, 153, 0.12)', display: 'grid', placeItems: 'center' }}>
+              <Package size={19} color="#34d399" />
+            </div>
           </div>
         </div>
 

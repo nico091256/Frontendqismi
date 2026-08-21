@@ -617,21 +617,30 @@ h3 { font-size: 1.1rem; font-weight: 600; }
   justify-content: center;
 }
 
+.nav-bell-btn {
+  position: relative !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .bell-badge-bubble {
   position: absolute;
-  top: 2px;
-  right: 2px;
+  top: -2px;
+  right: -2px;
   background: #ef4444;
   color: white;
   font-size: 0.65rem;
   font-weight: 700;
-  width: 17px;
+  min-width: 17px;
   height: 17px;
-  border-radius: 50%;
+  padding: 0 4px;
+  border-radius: 99px;
   display: flex;
   align-items: center;
   justify-content: center;
   box-shadow: 0 0 8px rgba(239,68,68,0.6);
+  pointer-events: none;
 }
 
 .navbar-mobile-controls {

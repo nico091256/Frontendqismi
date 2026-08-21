@@ -33,6 +33,19 @@ const DEPARTMENTS = [
   'Dokument'
 ];
 
+function formatPhone(phone) {
+  if (!phone) return '';
+  const clean = phone.replace(/\D/g, '');
+  if (clean.length === 9) {
+    return `+998 (${clean.slice(0, 2)}) ${clean.slice(2, 5)}-${clean.slice(5, 7)}-${clean.slice(7, 9)}`;
+  }
+  if (clean.length === 12 && clean.startsWith('998')) {
+    const rest = clean.slice(3);
+    return `+998 (${rest.slice(0, 2)}) ${rest.slice(2, 5)}-${rest.slice(5, 7)}-${rest.slice(7, 9)}`;
+  }
+  return phone;
+}
+
 export default function InventoryPage() {
   const [items, setItems] = useState(initialData || []);
   const [loading, setLoading] = useState(false);
@@ -40,6 +53,7 @@ export default function InventoryPage() {
   const [selectedDept, setSelectedDept] = useState('ALL');
   const [deviceFilter, setDeviceFilter] = useState('ALL'); // ALL | PC | Laptop | DUAL_MONITOR | HAS_PRINTER
   const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'table'
+  const [sortBy, setSortBy] = useState('AZ'); // 'AZ' | 'ZA' | 'DEPT'
 
   // Modals state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -103,6 +117,27 @@ export default function InventoryPage() {
   useEffect(() => {
     loadInventory();
   }, [loadInventory]);
+
+  // Alphabetical & Custom Sorting
+  const sortedItems = useMemo(() => {
+    const list = [...items];
+    if (sortBy === 'AZ') {
+      list.sort((a, b) => {
+        const nameA = `${a.lastName || ''} ${a.firstName || ''}`.trim().toLowerCase();
+        const nameB = `${b.lastName || ''} ${b.firstName || ''}`.trim().toLowerCase();
+        return nameA.localeCompare(nameB, 'uz', { sensitivity: 'base' });
+      });
+    } else if (sortBy === 'ZA') {
+      list.sort((a, b) => {
+        const nameA = `${a.lastName || ''} ${a.firstName || ''}`.trim().toLowerCase();
+        const nameB = `${b.lastName || ''} ${b.firstName || ''}`.trim().toLowerCase();
+        return nameB.localeCompare(nameA, 'uz', { sensitivity: 'base' });
+      });
+    } else if (sortBy === 'DEPT') {
+      list.sort((a, b) => (a.position || '').localeCompare(b.position || '', 'uz'));
+    }
+    return list;
+  }, [items, sortBy]);
 
   // Statistics calculation
   const stats = useMemo(() => {
@@ -331,6 +366,43 @@ export default function InventoryPage() {
                 )}
               </div>
 
+              {/* Sort selector */}
+              <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', padding: 3, borderRadius: 8, border: '1px solid var(--border)' }}>
+                <button
+                  onClick={() => setSortBy('AZ')}
+                  style={{
+                    padding: '7px 10px',
+                    borderRadius: 6,
+                    border: 'none',
+                    background: sortBy === 'AZ' ? 'var(--accent)' : 'transparent',
+                    color: sortBy === 'AZ' ? '#fff' : 'var(--text-muted)',
+                    cursor: 'pointer',
+                    fontSize: '0.78rem',
+                    fontWeight: 600
+                  }}
+                  title="Alifbo bo'yicha (A-Z)"
+                >
+                  🔤 A-Z
+                </button>
+
+                <button
+                  onClick={() => setSortBy('ZA')}
+                  style={{
+                    padding: '7px 10px',
+                    borderRadius: 6,
+                    border: 'none',
+                    background: sortBy === 'ZA' ? 'var(--accent)' : 'transparent',
+                    color: sortBy === 'ZA' ? '#fff' : 'var(--text-muted)',
+                    cursor: 'pointer',
+                    fontSize: '0.78rem',
+                    fontWeight: 600
+                  }}
+                  title="Teskari alifbo (Z-A)"
+                >
+                  🔤 Z-A
+                </button>
+              </div>
+
               {/* View Switcher */}
               <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', padding: 3, borderRadius: 8, border: '1px solid var(--border)' }}>
                 <button
@@ -440,7 +512,7 @@ export default function InventoryPage() {
         </div>
 
         {/* ── Content View: GRID OR TABLE ── */}
-        {items.length === 0 ? (
+        {sortedItems.length === 0 ? (
           <div className="card" style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}>
             <Info size={40} style={{ margin: '0 auto 12px', opacity: 0.5 }} />
             <h3>Hech qanday jihoz yoki xodim topilmadi</h3>
@@ -449,7 +521,7 @@ export default function InventoryPage() {
         ) : viewMode === 'grid' ? (
           /* ── GRID MODE ── */
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16 }}>
-            {items.map((item) => (
+            {sortedItems.map((item) => (
               <div 
                 key={item.id} 
                 className="card" 
@@ -481,23 +553,37 @@ export default function InventoryPage() {
                       <div style={{ fontWeight: 700, fontSize: '0.98rem', color: 'var(--text-primary)' }}>
                         {item.fullName}
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
                         <span style={{
-                          fontSize: '0.72rem',
+                          fontSize: '0.74rem',
                           fontWeight: 600,
-                          padding: '2px 7px',
+                          padding: '2px 8px',
                           borderRadius: 4,
                           background: 'rgba(255,255,255,0.06)',
                           color: 'var(--text-secondary)'
                         }}>
                           {item.position}
                         </span>
+
                         {item.phone && (
                           <a 
                             href={`tel:${item.phone}`} 
-                            style={{ fontSize: '0.74rem', color: '#38bdf8', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 3 }}
+                            style={{ 
+                              fontSize: '0.78rem', 
+                              fontWeight: 600,
+                              color: '#38bdf8', 
+                              background: 'rgba(56, 189, 248, 0.1)',
+                              border: '1px solid rgba(56, 189, 248, 0.25)',
+                              padding: '2px 8px',
+                              borderRadius: 6,
+                              textDecoration: 'none', 
+                              display: 'inline-flex', 
+                              alignItems: 'center', 
+                              gap: 4 
+                            }}
+                            title="Qo'ng'iroq qilish"
                           >
-                            <Phone size={11} /> {item.phone}
+                            <Phone size={12} /> {formatPhone(item.phone)}
                           </a>
                         )}
                       </div>
@@ -605,59 +691,122 @@ export default function InventoryPage() {
             ))}
           </div>
         ) : (
-          /* ── TABLE MODE ── */
-          <div className="card" style={{ padding: 0, overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.84rem', textAlign: 'left' }}>
+          /* ── TABLE MODE (100% FIT, ZERO HORIZONTAL SCROLL) ── */
+          <div className="card" style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--border)' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.84rem', textAlign: 'left', tableLayout: 'auto' }}>
               <thead>
-                <tr style={{ background: 'rgba(255,255,255,0.04)', borderBottom: '1px solid var(--border)', color: 'var(--text-muted)' }}>
-                  <th style={{ padding: '12px 14px', width: 45 }}>#</th>
-                  <th style={{ padding: '12px 14px' }}>Xodim F.I.Sh</th>
-                  <th style={{ padding: '12px 14px' }}>Lavozimi</th>
-                  <th style={{ padding: '12px 14px' }}>Telefon</th>
-                  <th style={{ padding: '12px 14px', minWidth: 240 }}>Kompyuter Xarakteristikasi</th>
-                  <th style={{ padding: '12px 14px' }}>1-Monitor</th>
-                  <th style={{ padding: '12px 14px' }}>2-Monitor</th>
-                  <th style={{ padding: '12px 14px' }}>Printer</th>
-                  <th style={{ padding: '12px 14px', textAlign: 'right' }}>Amallar</th>
+                <tr style={{ background: 'rgba(255,255,255,0.05)', borderBottom: '2px solid rgba(255,255,255,0.08)', color: 'var(--text-muted)' }}>
+                  <th style={{ padding: '12px 14px', width: '4%' }}>#</th>
+                  <th style={{ padding: '12px 14px', width: '25%' }}>Xodim & Lavozimi</th>
+                  <th style={{ padding: '12px 14px', width: '18%' }}>Telefon</th>
+                  <th style={{ padding: '12px 14px', width: '30%' }}>Kompyuter Xarakteristikasi</th>
+                  <th style={{ padding: '12px 14px', width: '15%' }}>Monitor / Jihozlar</th>
+                  <th style={{ padding: '12px 14px', width: '8%', textAlign: 'right' }}>Amallar</th>
                 </tr>
               </thead>
               <tbody>
-                {items.map((item, idx) => (
+                {sortedItems.map((item, idx) => (
                   <tr 
                     key={item.id}
                     style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.15s' }}
                     className="table-row-hover"
                   >
-                    <td style={{ padding: '12px 14px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{idx + 1}</td>
-                    <td style={{ padding: '12px 14px', fontWeight: 600, color: 'var(--text-primary)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    {/* Index */}
+                    <td style={{ padding: '12px 14px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', verticalAlign: 'top' }}>
+                      {idx + 1}
+                    </td>
+
+                    {/* Name + Position */}
+                    <td style={{ padding: '12px 14px', verticalAlign: 'top' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, color: 'var(--text-primary)' }}>
                         {item.deviceType === 'Laptop' ? <Laptop size={14} color="#F7A838" /> : <Cpu size={14} color="#3b82f6" />}
-                        {item.fullName}
+                        <span>{item.fullName}</span>
+                      </div>
+                      <div style={{ marginTop: 3 }}>
+                        <span style={{
+                          fontSize: '0.72rem',
+                          fontWeight: 600,
+                          padding: '1px 6px',
+                          borderRadius: 4,
+                          background: 'rgba(255,255,255,0.06)',
+                          color: 'var(--text-secondary)'
+                        }}>
+                          {item.position}
+                        </span>
                       </div>
                     </td>
-                    <td style={{ padding: '12px 14px', color: 'var(--text-secondary)' }}>{item.position}</td>
-                    <td style={{ padding: '12px 14px', color: '#38bdf8' }}>{item.phone || '—'}</td>
-                    <td style={{ padding: '12px 14px', color: 'var(--text-primary)', fontSize: '0.8rem' }}>{item.pcSpecs || '—'}</td>
-                    <td style={{ padding: '12px 14px', color: '#34d399' }}>{item.monitor1 || '—'}</td>
-                    <td style={{ padding: '12px 14px', color: '#38bdf8' }}>{item.monitor2 || '—'}</td>
-                    <td style={{ padding: '12px 14px', color: '#f472b6' }}>{item.printer || '—'}</td>
-                    <td style={{ padding: '12px 14px', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                      <button 
-                        onClick={() => openModal(item)} 
-                        className="btn btn-ghost btn-sm"
-                        style={{ padding: '4px 6px', marginRight: 4 }}
-                        title="Tahrirlash"
-                      >
-                        <Edit3 size={13} />
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(item.id, item.fullName)} 
-                        className="btn btn-danger btn-sm"
-                        style={{ padding: '4px 6px' }}
-                        title="O'chirish"
-                      >
-                        <Trash2 size={13} />
-                      </button>
+
+                    {/* Phone */}
+                    <td style={{ padding: '12px 14px', verticalAlign: 'top' }}>
+                      {item.phone ? (
+                        <a 
+                          href={`tel:${item.phone}`} 
+                          style={{ 
+                            fontSize: '0.78rem', 
+                            color: '#38bdf8', 
+                            textDecoration: 'none', 
+                            fontWeight: 600,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4
+                          }}
+                        >
+                          <Phone size={11} /> {formatPhone(item.phone)}
+                        </a>
+                      ) : (
+                        <span style={{ color: 'var(--text-muted)' }}>—</span>
+                      )}
+                    </td>
+
+                    {/* Specs */}
+                    <td style={{ padding: '12px 14px', color: 'var(--text-primary)', fontSize: '0.8rem', lineHeight: 1.4, verticalAlign: 'top' }}>
+                      {item.pcSpecs || <span style={{ color: 'var(--text-muted)' }}>Kompyuter biriktirilmagan</span>}
+                    </td>
+
+                    {/* Monitors & Printer */}
+                    <td style={{ padding: '12px 14px', verticalAlign: 'top' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                        {item.monitor1 && (
+                          <span style={{ fontSize: '0.74rem', color: '#34d399', display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <Monitor size={11} /> {item.monitor1}
+                          </span>
+                        )}
+                        {item.monitor2 && (
+                          <span style={{ fontSize: '0.74rem', color: '#38bdf8', display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <Monitor size={11} /> {item.monitor2}
+                          </span>
+                        )}
+                        {item.printer && (
+                          <span style={{ fontSize: '0.74rem', color: '#f472b6', display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <Printer size={11} /> {item.printer}
+                          </span>
+                        )}
+                        {!item.monitor1 && !item.monitor2 && !item.printer && (
+                          <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>—</span>
+                        )}
+                      </div>
+                    </td>
+
+                    {/* Actions */}
+                    <td style={{ padding: '12px 14px', textAlign: 'right', verticalAlign: 'top' }}>
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 4 }}>
+                        <button 
+                          onClick={() => openModal(item)} 
+                          className="btn btn-ghost btn-sm"
+                          style={{ padding: '4px 6px' }}
+                          title="Tahrirlash"
+                        >
+                          <Edit3 size={13} />
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(item.id, item.fullName)} 
+                          className="btn btn-danger btn-sm"
+                          style={{ padding: '4px 6px' }}
+                          title="O'chirish"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
