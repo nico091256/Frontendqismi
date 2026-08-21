@@ -4,8 +4,9 @@ import { registerUser, loginUser } from '../api/problems';
 import toast from 'react-hot-toast';
 import {
   Phone, Lock, User, Eye, EyeOff, ArrowRight,
-  ShieldCheck, Headphones, KeyRound, Sparkles, UserCog
+  ShieldCheck, KeyRound, Sparkles
 } from 'lucide-react';
+import Logo from '../components/Logo';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -109,13 +110,14 @@ export default function LoginPage() {
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <div style={{
-            width: 64, height: 64, borderRadius: '18px',
-            background: 'linear-gradient(135deg, #3b82f6, #6366f1)',
+            width: 72, height: 72, borderRadius: '20px',
+            background: 'rgba(247, 168, 56, 0.1)',
+            border: '1px solid rgba(247, 168, 56, 0.3)',
             display: 'grid', placeItems: 'center',
             margin: '0 auto 16px',
-            boxShadow: '0 8px 32px rgba(99,102,241,0.3)',
+            boxShadow: '0 8px 32px rgba(247, 168, 56, 0.2)',
           }}>
-            <Headphones size={30} color="white" />
+            <Logo size={42} color="#F7A838" />
           </div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: 4 }}>
             IT Yordam Tizimi

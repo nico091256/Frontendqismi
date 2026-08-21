@@ -1,15 +1,18 @@
-﻿import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, BarChart3, LogOut, ClipboardList, 
-  UserCog, Headphones, Bell, User, Gauge
+  UserCog, Headphones, Bell, User, Gauge, Menu, X
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { logoutUser, getNewCount } from '../api/problems';
 
+import Logo from './Logo';
+
 export default function Navbar() {
   const [auth, setAuth] = useState(null);
   const [newCount, setNewCount] = useState(0);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const prevCountRef = useRef(0);
   const navigate = useNavigate();
   const location = useLocation();
@@ -28,6 +31,11 @@ export default function Navbar() {
     return () => window.removeEventListener('storage', readAuth);
   }, [location]);
 
+  // Close mobile menu on page navigation
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
+
   // ── Polling for new problems notification (#1) ───────────
   useEffect(() => {
     if (!auth) return;
@@ -36,7 +44,7 @@ export default function Navbar() {
     const checkNotification = async () => {
       try {
         const res = await getNewCount();
-        const count = res.data.count || 0;
+        const count = res.data?.count || 0;
         if (isMounted) {
           if (count > prevCountRef.current && prevCountRef.current !== 0) {
             toast(`🔔 Yangi murojaat kelib tushdi! (Jami yangi: ${count})`, {
@@ -69,6 +77,7 @@ export default function Navbar() {
     try { await logoutUser(); } catch { /* ignore */ }
     localStorage.removeItem('it_auth');
     setAuth(null);
+    setMobileMenuOpen(false);
     toast.success("Tizimdan chiqildi 🔒");
     navigate('/login');
   };
@@ -83,111 +92,186 @@ export default function Navbar() {
     <nav className="navbar">
       <div className="navbar-inner">
         {/* Brand */}
-        <NavLink to="/dashboard" className="navbar-brand">
-          <div className="brand-icon">
-            {isManager ? <UserCog size={18} color="#8b5cf6" /> : <Headphones size={18} color="#3b82f6" />}
+        <NavLink to="/dashboard" className="navbar-brand" onClick={() => setMobileMenuOpen(false)}>
+          <div className="brand-icon" style={{ background: 'rgba(247, 168, 56, 0.12)', border: '1px solid rgba(247, 168, 56, 0.3)' }}>
+            <Logo size={22} color="#F7A838" />
           </div>
-          <span>{isManager ? 'Rahbar Paneli' : 'IT Support'}</span>
+          <span className="brand-title">{isManager ? 'Rahbar Paneli' : 'IT Support'}</span>
         </NavLink>
 
-        {/* Nav links */}
-        <div className="navbar-nav" style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-          
-          {/* Dashboard link (#2) */}
+        {/* Desktop Nav links */}
+        <div className="navbar-nav desktop-nav">
           <NavLink to="/dashboard" className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')}>
             <Gauge size={15} />
-            Dashboard
+            <span>Dashboard</span>
           </NavLink>
 
-          {/* Admin Panel Link */}
           <NavLink to="/admin" className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')} style={{ position: 'relative' }}>
             <LayoutDashboard size={15} />
-            Murojaatlar
+            <span>Murojaatlar</span>
             {newCount > 0 && (
-              <span style={{
-                background: '#ef4444',
-                color: 'white',
-                fontSize: '0.68rem',
-                fontWeight: 700,
-                padding: '1px 6px',
-                borderRadius: 10,
-                marginLeft: 4
-              }}>
+              <span className="nav-badge-count">
                 {newCount}
               </span>
             )}
           </NavLink>
 
-          {/* Manager linklari */}
           {isManager && (
             <NavLink to="/manager" className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')}>
               <UserCog size={15} />
-              Xodimlar & Topshiriq
+              <span>Xodimlar & Topshiriq</span>
             </NavLink>
           )}
 
-          {/* IT Support linklari */}
           {isITSupport && (
             <NavLink to="/tasks" className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')}>
               <ClipboardList size={15} />
-              Topshiriqlar
+              <span>Topshiriqlar</span>
             </NavLink>
           )}
 
-          {/* Hisobotlar */}
           <NavLink to="/reports" className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')}>
             <BarChart3 size={15} />
-            Hisobotlar
+            <span>Hisobotlar</span>
           </NavLink>
 
-          {/* Notification Bell Badge (#1) */}
+          {/* Notification Bell Badge */}
           <button 
             onClick={() => navigate('/admin')} 
-            className="btn btn-ghost btn-sm"
+            className="btn btn-ghost btn-sm nav-bell-btn"
             title={`${newCount} ta yangi murojaat`}
-            style={{ position: 'relative', padding: '6px 10px', color: newCount > 0 ? '#f59e0b' : 'var(--text-muted)' }}
           >
             <Bell size={16} />
             {newCount > 0 && (
-              <span style={{
-                position: 'absolute',
-                top: 2,
-                right: 2,
-                background: '#ef4444',
-                color: 'white',
-                fontSize: '0.65rem',
-                fontWeight: 700,
-                width: 16,
-                height: 16,
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
+              <span className="bell-badge-bubble">
                 {newCount}
               </span>
             )}
           </button>
 
-          {/* Profil havolasi (#6) */}
+          {/* Profile link */}
           {auth && (
-            <NavLink to="/profile" className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')} style={{ borderLeft: '1px solid var(--border)', paddingLeft: 12 }}>
+            <NavLink to="/profile" className={({ isActive }) => 'nav-link nav-profile-link' + (isActive ? ' active' : '')}>
               <User size={15} color="#8b5cf6" />
               <span>{auth.fullName.split(' ')[0]}</span>
             </NavLink>
           )}
 
-          {/* Chiqish */}
+          {/* Logout */}
           {auth && (
-            <button onClick={handleLogout} className="btn btn-ghost btn-sm"
-              title="Tizimdan chiqish"
-              style={{ borderColor: 'rgba(239,68,68,0.3)', color: '#f87171', marginLeft: 4 }}>
+            <button onClick={handleLogout} className="btn btn-ghost btn-sm nav-logout-btn" title="Tizimdan chiqish">
               <LogOut size={14} />
-              Chiqish
+              <span>Chiqish</span>
             </button>
           )}
         </div>
+
+        {/* Mobile Action Controls (Bell + Hamburger Toggle) */}
+        <div className="navbar-mobile-controls">
+          <button 
+            onClick={() => navigate('/admin')} 
+            className="btn btn-ghost btn-sm mobile-bell-btn"
+            title={`${newCount} ta yangi murojaat`}
+          >
+            <Bell size={18} />
+            {newCount > 0 && (
+              <span className="bell-badge-bubble">
+                {newCount}
+              </span>
+            )}
+          </button>
+
+          <button 
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="mobile-hamburger-btn"
+            aria-label="Menyu"
+          >
+            {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
+        </div>
       </div>
+
+      {/* Mobile Drawer Dropdown Menu */}
+      {mobileMenuOpen && (
+        <div className="navbar-mobile-drawer">
+          <div className="mobile-drawer-links">
+            <NavLink 
+              to="/dashboard" 
+              className={({ isActive }) => 'mobile-drawer-item' + (isActive ? ' active' : '')}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <div className="mobile-drawer-icon"><Gauge size={18} /></div>
+              <span className="mobile-drawer-label">Dashboard</span>
+            </NavLink>
+
+            <NavLink 
+              to="/admin" 
+              className={({ isActive }) => 'mobile-drawer-item' + (isActive ? ' active' : '')}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <div className="mobile-drawer-icon"><LayoutDashboard size={18} /></div>
+              <span className="mobile-drawer-label">Murojaatlar</span>
+              {newCount > 0 && (
+                <span className="nav-badge-count ml-auto">
+                  {newCount} yangi
+                </span>
+              )}
+            </NavLink>
+
+            {isManager && (
+              <NavLink 
+                to="/manager" 
+                className={({ isActive }) => 'mobile-drawer-item' + (isActive ? ' active' : '')}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <div className="mobile-drawer-icon"><UserCog size={18} /></div>
+                <span className="mobile-drawer-label">Xodimlar & Topshiriqlar</span>
+              </NavLink>
+            )}
+
+            {isITSupport && (
+              <NavLink 
+                to="/tasks" 
+                className={({ isActive }) => 'mobile-drawer-item' + (isActive ? ' active' : '')}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <div className="mobile-drawer-icon"><ClipboardList size={18} /></div>
+                <span className="mobile-drawer-label">Topshiriqlarim</span>
+              </NavLink>
+            )}
+
+            <NavLink 
+              to="/reports" 
+              className={({ isActive }) => 'mobile-drawer-item' + (isActive ? ' active' : '')}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <div className="mobile-drawer-icon"><BarChart3 size={18} /></div>
+              <span className="mobile-drawer-label">Hisobot & Statistika</span>
+            </NavLink>
+
+            <NavLink 
+              to="/profile" 
+              className={({ isActive }) => 'mobile-drawer-item' + (isActive ? ' active' : '')}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <div className="mobile-drawer-icon"><User size={18} /></div>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span className="mobile-drawer-label">{auth?.fullName || 'Profil'}</span>
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                  {isManager ? 'Menejer' : 'IT Xodimi'}
+                </span>
+              </div>
+            </NavLink>
+          </div>
+
+          <div className="mobile-drawer-footer">
+            <button onClick={handleLogout} className="mobile-drawer-logout-btn">
+              <LogOut size={16} />
+              <span>Tizimdan Chiqish</span>
+            </button>
+          </div>
+        </div>
+      )}
     </nav>
   );
 }
