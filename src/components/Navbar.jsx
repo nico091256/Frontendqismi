@@ -119,7 +119,7 @@ export default function Navbar() {
           {isManager && (
             <NavLink to="/manager" className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')}>
               <UserCog size={15} />
-              <span>Xodimlar & Topshiriq</span>
+              <span>Boshqaruv</span>
             </NavLink>
           )}
 

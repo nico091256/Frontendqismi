@@ -132,14 +132,16 @@ h3 { font-size: 1.1rem; font-weight: 600; }
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 14px;
+  padding: 8px 13px;
   border-radius: var(--radius-sm);
   text-decoration: none;
   color: var(--text-secondary);
-  font-size: 0.875rem;
+  font-size: 0.86rem;
   font-weight: 500;
   transition: all var(--transition);
   border: 1px solid transparent;
+  white-space: nowrap !important;
+  flex-shrink: 0;
 }
 .nav-link:hover {
   color: var(--text-primary);
