@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAllProblems, getStats } from "../api/problems";
 import toast from "react-hot-toast";
@@ -20,9 +20,16 @@ function timeAgo(dateStr) {
 function StatCard({ icon: Icon, label, value, color, bg }) {
   return (
     <div style={{
-      background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 16,
-      padding: "24px", display: "flex", flexDirection: "column", gap: 12,
+      background: "var(--bg-card)",
+      border: "1px solid var(--border)",
+      borderRadius: 16,
+      padding: "20px 24px",
+      display: "flex",
+      flexDirection: "column",
+      gap: 12,
       borderLeft: "4px solid " + color,
+      backdropFilter: "blur(12px)",
+      boxShadow: "0 4px 20px rgba(0,0,0,0.2)"
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span style={{ fontSize: "0.82rem", color: "var(--text-muted)", fontWeight: 500 }}>{label}</span>

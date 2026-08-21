@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getITWorkers, deleteITWorker, getTasks, createTask, deleteTask } from '../api/problems';
 import toast from 'react-hot-toast';
 import {
@@ -31,6 +32,7 @@ const emptyTask = {
 };
 
 export default function ManagerPage() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('tasks'); // 'tasks' | 'workers'
   const [workers, setWorkers] = useState([]);
   const [tasks, setTasks]     = useState([]);
@@ -47,20 +49,20 @@ export default function ManagerPage() {
     setLoading(true);
     try {
       const [wRes, tRes] = await Promise.all([getITWorkers(), getTasks()]);
-      setWorkers(wRes.data.users);
-      setTasks(tRes.data.tasks);
+      setWorkers(wRes.data.users || []);
+      setTasks(tRes.data.tasks || []);
       if (showToast) toast.success("Ma'lumotlar yangilandi!");
     } catch (err) {
       if (err.response?.status === 401) {
         localStorage.removeItem('it_auth');
-        window.location.href = '/login';
+        navigate('/login');
         return;
       }
       toast.error("Yuklashda xatolik yuz berdi.");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [navigate]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 

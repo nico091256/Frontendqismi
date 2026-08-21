@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getTasks, updateTaskStatus } from '../api/problems';
 import toast from 'react-hot-toast';
 import {
@@ -33,6 +34,7 @@ function formatDeadline(deadline) {
 }
 
 export default function TasksPage() {
+  const navigate = useNavigate();
   const [tasks, setTasks]           = useState([]);
   const [loading, setLoading]       = useState(true);
   const [filterStatus, setFilter]   = useState('ALL');
@@ -42,19 +44,19 @@ export default function TasksPage() {
     setLoading(true);
     try {
       const res = await getTasks();
-      setTasks(res.data.tasks);
+      setTasks(res.data.tasks || []);
       if (showToast) toast.success("Topshiriqlar yangilandi!");
     } catch (err) {
       if (err.response?.status === 401) {
         localStorage.removeItem('it_auth');
-        window.location.href = '/login';
+        navigate('/login');
         return;
       }
       toast.error("Topshiriqlarni yuklashda xatolik.");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [navigate]);
 
   useEffect(() => { fetchTasks(); }, [fetchTasks]);
 
