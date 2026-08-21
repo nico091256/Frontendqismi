@@ -1,4 +1,4 @@
-﻿import { lazy, Suspense } from 'react';
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Navbar from './components/Navbar';
@@ -13,6 +13,7 @@ const ReportsPage   = lazy(() => import('./pages/ReportsPage'));
 const TasksPage     = lazy(() => import('./pages/TasksPage'));
 const ManagerPage   = lazy(() => import('./pages/ManagerPage'));
 const ProfilePage   = lazy(() => import('./pages/ProfilePage'));
+const InventoryPage = lazy(() => import('./pages/InventoryPage'));
 
 // Yuklanayotgan holat spinneri
 function PageLoader() {
@@ -92,6 +93,16 @@ export default function App() {
             element={
               <AdminGuard>
                 <TasksPage />
+              </AdminGuard>
+            }
+          />
+
+          {/* Inventarizatsiya & Jihozlar hisobi */}
+          <Route
+            path="/inventory"
+            element={
+              <AdminGuard>
+                <InventoryPage />
               </AdminGuard>
             }
           />

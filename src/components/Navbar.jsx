@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, BarChart3, LogOut, ClipboardList, 
-  UserCog, Headphones, Bell, User, Gauge, Menu, X
+  UserCog, Headphones, Bell, User, Gauge, Menu, X, Laptop
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { logoutUser, getNewCount } from '../api/problems';
@@ -130,6 +130,11 @@ export default function Navbar() {
             </NavLink>
           )}
 
+          <NavLink to="/inventory" className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')}>
+            <Laptop size={15} color="#F7A838" />
+            <span>Inventar</span>
+          </NavLink>
+
           <NavLink to="/reports" className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')}>
             <BarChart3 size={15} />
             <span>Hisobotlar</span>
@@ -239,6 +244,15 @@ export default function Navbar() {
                 <span className="mobile-drawer-label">Topshiriqlarim</span>
               </NavLink>
             )}
+
+            <NavLink 
+              to="/inventory" 
+              className={({ isActive }) => 'mobile-drawer-item' + (isActive ? ' active' : '')}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <div className="mobile-drawer-icon"><Laptop size={18} color="#F7A838" /></div>
+              <span className="mobile-drawer-label">IT Inventarizatsiya</span>
+            </NavLink>
 
             <NavLink 
               to="/reports" 

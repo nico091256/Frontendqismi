@@ -50,3 +50,12 @@ export const getStats       = (year)     => api.get(`/stats${year ? `?year=${yea
 export const assignProblem  = (id, userId) => api.patch(`/problems/${id}/assign`, { userId });
 export const getNewCount    = (since)    => api.get(`/problems/new-count${since ? `?since=${since}` : ''}`);
 export const checkTicket    = (ticket)   => api.get(`/problems/check/${ticket}`);
+
+// ── Inventarizatsiya (Xodimlar & Texnika) ─────────────────────────
+export const getInventory          = (params)     => api.get('/inventory', { params });
+export const getInventoryStats     = ()           => api.get('/inventory/stats');
+export const createInventoryItem   = (data)       => api.post('/inventory', data);
+export const updateInventoryItem   = (id, data)   => api.patch(`/inventory/${id}`, data);
+export const deleteInventoryItem   = (id)         => api.delete(`/inventory/${id}`);
+export const exportInventoryExcel  = ()           => api.get('/inventory/export', { responseType: 'blob' });
+
