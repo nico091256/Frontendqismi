@@ -10,11 +10,12 @@ import {
   getITWorkers 
 } from '../api/problems';
 import ProblemCard from '../components/ProblemCard';
+import HandoverActModal from '../components/HandoverActModal';
 import toast from 'react-hot-toast';
 import { 
   RefreshCw, LayoutDashboard, Inbox, CheckCheck, AlertTriangle, 
   Search, Download, X, Wrench, Package, Briefcase, Building2, Phone, Hash, Eye,
-  CheckCircle, MessageSquare
+  CheckCircle, MessageSquare, FileText
 } from 'lucide-react';
 
 export default function AdminPage() {
@@ -29,6 +30,9 @@ export default function AdminPage() {
   const [resolvingId, setResolvingId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [assigningId, setAssigningId] = useState(null);
+
+  // Handover Act Modal State (Shartnoma formasi)
+  const [actProblem, setActProblem] = useState(null);
 
   // Resolve Modal State (#3)
   const [resolvingProblem, setResolvingProblem] = useState(null);
@@ -480,6 +484,7 @@ export default function AdminPage() {
                 workers={workers}
                 onResolve={handleOpenResolveModal}
                 onAssign={handleAssignWorker}
+                onOpenAct={(prob) => setActProblem(prob)}
                 onDelete={handleDelete}
                 onEdit={openEditModal}
                 resolving={resolvingId === problem.id}
@@ -491,6 +496,13 @@ export default function AdminPage() {
         )}
       </div>
 
+      {/* ════ TOPShIRISH AKTI (SHARTNOMA) MODAL OYNASI ════ */}
+      <HandoverActModal
+        problem={actProblem}
+        isOpen={!!actProblem}
+        onClose={() => setActProblem(null)}
+      />
+
       {/* ════ HAL QILISH MODAL OYNASI (#3 RESOLVE NOTE MODAL) ════ */}
       {resolvingProblem && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(5px)', display: 'grid', placeItems: 'center', zIndex: 110, padding: 16 }}>
@@ -498,29 +510,31 @@ export default function AdminPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: 14, marginBottom: 16 }}>
               <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'white', display: 'flex', alignItems: 'center', gap: 8 }}>
                 <CheckCircle size={20} color="#10b981" />
-                Murojaatni Hal Qilish: {resolvingProblem.ticketNumber}
+                Murojaatni Hal Qilish
               </h3>
               <button onClick={() => setResolvingProblem(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
                 <X size={20} />
               </button>
             </div>
-
+            
             <form onSubmit={handleConfirmResolve}>
-              <div style={{ marginBottom: 16, fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
-                <strong>{resolvingProblem.lastName} {resolvingProblem.firstName}</strong> ({resolvingProblem.objectName || resolvingProblem.room || '—'}) murojaati holatini <strong>"Hal qilindi"</strong>ga o'tkazmoqdasiz.
+              <div style={{ marginBottom: 14, fontSize: '0.86rem', color: 'var(--text-secondary)' }}>
+                Ticket: <strong style={{ color: 'white' }}>{resolvingProblem.ticketNumber}</strong> ({resolvingProblem.type})
+                <br />
+                Xodim: <strong style={{ color: 'white' }}>{resolvingProblem.lastName} {resolvingProblem.firstName}</strong>
               </div>
 
-              <div className="form-group" style={{ marginBottom: 20 }}>
-                <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <MessageSquare size={14} color="#818cf8" />
-                  Qanday hal qilindi? / Bajarilgan ishlar (ixtiyoriy)
+              <div className="form-group" style={{ marginBottom: 18 }}>
+                <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                  <MessageSquare size={14} color="var(--accent-light)" /> Bajarilgan ishlar / Izoh (ixtiyoriy):
                 </label>
                 <textarea
                   className="form-textarea"
-                  placeholder="Masalan: Monitor kabeli almashtirildi, drayver o'rnatildi..."
+                  placeholder="Muammo qanday bartaraf etildi yoki qanday jihoz topshirildi..."
+                  rows={3}
                   value={resolveNote}
                   onChange={(e) => setResolveNote(e.target.value)}
-                  style={{ background: 'var(--bg-input)', borderRadius: 8, minHeight: 90 }}
+                  style={{ background: 'var(--bg-input)', borderRadius: 8 }}
                   autoFocus
                 />
               </div>
@@ -530,8 +544,8 @@ export default function AdminPage() {
                   Bekor qilish
                 </button>
                 <button type="submit" className="btn btn-success" disabled={resolvingId === resolvingProblem.id}>
-                  <CheckCircle size={15} />
-                  {resolvingId === resolvingProblem.id ? 'Saqlanmoqda...' : 'Hal etildi deb belgilash'}
+                  <CheckCircle size={16} />
+                  {resolvingId === resolvingProblem.id ? "Saqlanmoqda..." : "Tasdiqlash (Hal qilindi)"}
                 </button>
               </div>
             </form>
@@ -541,90 +555,88 @@ export default function AdminPage() {
 
       {/* ════ TAHRIRLASH MODAL OYNASI (EDIT MODAL) ════ */}
       {editingProblem && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'grid', placeItems: 'center', zIndex: 100, padding: 16, overflowY: 'auto' }}>
-          <div style={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-lg)', width: '100%', maxWidth: 560, padding: 24, boxShadow: '0 20px 50px rgba(0,0,0,0.5)', position: 'relative', animation: 'scaleUp 0.2s ease' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(5px)', display: 'grid', placeItems: 'center', zIndex: 110, padding: 16, overflowY: 'auto' }}>
+          <div style={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 'var(--radius-lg)', width: '100%', maxWidth: 540, padding: 24, boxShadow: '0 25px 60px rgba(0,0,0,0.6)' }}>
             
-            {/* Modal Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: 14, marginBottom: 20 }}>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'white', display: 'flex', alignItems: 'center', gap: 8 }}>
-                Murojaatni Tahrirlash: {editingProblem.ticketNumber}
-              </h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: 14, marginBottom: 18 }}>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'white' }}>
+                Murojaatni Tahrirlash ({editingProblem.ticketNumber})
+              </h3>
               <button onClick={() => setEditingProblem(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
                 <X size={20} />
               </button>
             </div>
 
-            {/* Modal Form */}
-            <form onSubmit={handleSaveEdit} noValidate>
-              
-              {/* Type Switcher */}
-              <div className="form-group" style={{ marginBottom: 14 }}>
-                <label className="form-label">Murojaat Turi</label>
+            <form onSubmit={handleSaveEdit}>
+              {/* Type */}
+              <div className="form-group" style={{ marginBottom: 12 }}>
+                <label className="form-label">Murojaat turi</label>
                 <select name="type" className="form-input" value={editForm.type} onChange={handleEditChange} style={{ background: 'var(--bg-input)', color: 'white', borderRadius: 8 }}>
-                  <option value="Texnik muammo">Texnik muammo 🛠️</option>
-                  <option value="Jihoz so'rovi">Jihoz so'rovi 📦</option>
+                  <option value="Texnik muammo">Texnik muammo</option>
+                  <option value="Jihoz so'rovi">Jihoz so'rovi</option>
                 </select>
               </div>
 
-              {/* Personal info fields */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
-                <div className="form-group">
+              {/* FIO Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+                <div>
                   <label className="form-label">Familiya</label>
                   <input name="lastName" className="form-input" value={editForm.lastName} onChange={handleEditChange} style={{ background: 'var(--bg-input)', borderRadius: 8 }} />
                 </div>
-                <div className="form-group">
+                <div>
                   <label className="form-label">Ism</label>
                   <input name="firstName" className="form-input" value={editForm.firstName} onChange={handleEditChange} style={{ background: 'var(--bg-input)', borderRadius: 8 }} />
                 </div>
-                <div className="form-group">
+                <div>
                   <label className="form-label">Sharif</label>
                   <input name="middleName" className="form-input" value={editForm.middleName} onChange={handleEditChange} style={{ background: 'var(--bg-input)', borderRadius: 8 }} />
                 </div>
-                <div className="form-group">
+                <div>
                   <label className="form-label">Telefon</label>
                   <input name="phone" className="form-input" value={editForm.phone} onChange={handleEditChange} style={{ background: 'var(--bg-input)', borderRadius: 8 }} />
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
-                <div className="form-group">
-                  <label className="form-label">Lavozimi</label>
+              {/* Position & Object */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+                <div>
+                  <label className="form-label">Lavozim</label>
                   <input name="position" className="form-input" value={editForm.position} onChange={handleEditChange} style={{ background: 'var(--bg-input)', borderRadius: 8 }} />
                 </div>
-                <div className="form-group">
+                <div>
                   <label className="form-label">Obyekt nomi</label>
                   <input name="objectName" className="form-input" value={editForm.objectName} onChange={handleEditChange} style={{ background: 'var(--bg-input)', borderRadius: 8 }} />
                 </div>
               </div>
 
-              {/* Type-Specific Fields */}
+              {/* Specific fields */}
               {editForm.type === 'Texnik muammo' ? (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
-                  <div className="form-group">
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+                  <div>
                     <label className="form-label">Xona</label>
                     <input name="room" className="form-input" value={editForm.room} onChange={handleEditChange} style={{ background: 'var(--bg-input)', borderRadius: 8 }} />
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">Kompyuter nomi</label>
+                  <div>
+                    <label className="form-label">Kompyuter</label>
                     <input name="computer" className="form-input" value={editForm.computer} onChange={handleEditChange} style={{ background: 'var(--bg-input)', borderRadius: 8 }} />
                   </div>
                 </div>
               ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12, marginBottom: 14 }}>
-                  <div className="form-group">
+                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 10, marginBottom: 12 }}>
+                  <div>
                     <label className="form-label">So'ralgan jihoz</label>
                     <input name="requestedItem" className="form-input" value={editForm.requestedItem} onChange={handleEditChange} style={{ background: 'var(--bg-input)', borderRadius: 8 }} />
                   </div>
-                  <div className="form-group">
+                  <div>
                     <label className="form-label">Miqdor</label>
                     <input type="number" name="quantity" className="form-input" value={editForm.quantity} onChange={handleEditChange} style={{ background: 'var(--bg-input)', borderRadius: 8 }} />
                   </div>
                 </div>
               )}
 
-              {/* Common description */}
-              <div className="form-group" style={{ marginBottom: 14 }}>
-                <label className="form-label">{editForm.type === 'Texnik muammo' ? 'Muammo tavsifi' : 'Izoh'}</label>
+              {/* Description */}
+              <div className="form-group" style={{ marginBottom: 12 }}>
+                <label className="form-label">Tavsif / Izoh</label>
                 <textarea name="description" className="form-textarea" value={editForm.description} onChange={handleEditChange} style={{ background: 'var(--bg-input)', borderRadius: 8, minHeight: 70 }} />
               </div>
 

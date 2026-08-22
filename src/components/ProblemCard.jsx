@@ -1,8 +1,8 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { 
   CheckCircle, Trash2, Monitor, DoorOpen, Clock, CalendarCheck, 
   User, Briefcase, Building2, Phone, Edit2, Package, Wrench, 
-  Hash, UserCheck, MessageSquare, AlertTriangle 
+  Hash, UserCheck, MessageSquare, AlertTriangle, FileText
 } from 'lucide-react';
 
 function formatDate(dateStr) {
@@ -75,6 +75,7 @@ export default function ProblemCard({
   onDelete, 
   onEdit, 
   onAssign, 
+  onOpenAct,
   workers = [], 
   resolving, 
   deleting,
@@ -274,6 +275,20 @@ export default function ProblemCard({
               Hal qilindi
             </button>
           )}
+
+          {/* Handover Act Button (Only for Equipment Requests) */}
+          {!isTM && (
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => onOpenAct && onOpenAct(problem)}
+              style={{ borderColor: 'rgba(56, 189, 248, 0.35)', color: '#38bdf8' }}
+              title="Topshirish akti (Shartnoma formasi)"
+            >
+              <FileText size={14} />
+              Akt (Shartnoma)
+            </button>
+          )}
+
           <button
             className="btn btn-ghost btn-sm"
             onClick={() => onEdit(problem)}
