@@ -100,7 +100,11 @@ export default function AdminPage() {
       setProblems((prev) =>
         prev.map((p) => (p.id === id ? res.data.problem : p))
       );
-      toast.success('Murojaat hal qilindi! ✅');
+      if (res.data?.inventorySynced) {
+        toast.success("Murojaat hal qilindi va jihoz inventarga biriktirildi! 📦✅", { duration: 4500 });
+      } else {
+        toast.success('Murojaat hal qilindi! ✅');
+      }
       setResolvingProblem(null);
       setResolveNote('');
     } catch (err) {

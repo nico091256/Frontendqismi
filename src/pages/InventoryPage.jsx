@@ -12,25 +12,26 @@ import {
   Laptop, Monitor, Printer, Search, Plus, Download, RefreshCw, 
   Trash2, Edit3, User, Phone, Briefcase, Cpu, HardDrive, 
   SlidersHorizontal, LayoutGrid, Table, Check, X, Shield, 
-  Sparkles, Layers, Info, Filter, ArrowUpDown, ChevronRight
+  Sparkles, Layers, Info, Filter, ArrowUpDown, ChevronRight,
+  Building2, MapPin
 } from 'lucide-react';
 
 const DEPARTMENTS = [
   'ALL',
   'Buxgalter',
+  'Prorab',
+  'Injener',
   'PTO',
-  'Finan',
+  'Finansist',
+  'Snabjenets',
+  'Geodezist',
+  'Tender',
   'HR',
   'Transport',
-  'Loyihalash',
-  'Snab',
-  'Tender',
+  'Energetik',
   'Yurist',
-  'Analitik',
-  'AXO boshlig\'i',
-  'Beton',
-  'Styajka',
-  'Dokument'
+  'Master',
+  'TB'
 ];
 
 function formatPhone(phone) {
@@ -51,26 +52,38 @@ export default function InventoryPage() {
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDept, setSelectedDept] = useState('ALL');
+  const [selectedObject, setSelectedObject] = useState('ALL');
   const [deviceFilter, setDeviceFilter] = useState('ALL'); // ALL | PC | Laptop | DUAL_MONITOR | HAS_PRINTER
   const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'table'
-  const [sortBy, setSortBy] = useState('AZ'); // 'AZ' | 'ZA' | 'DEPT'
+  const [sortBy, setSortBy] = useState('AZ'); // 'AZ' | 'ZA' | 'DEPT' | 'OBJECT'
 
   // Modals state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
-  const [selectedDetail, setSelectedDetail] = useState(null);
 
   const [formData, setFormData] = useState({
     lastName: '',
     firstName: '',
     middleName: '',
-    position: 'Buxgalter',
+    objectName: 'Bosh ofis',
+    position: 'Prorab',
     phone: '',
     pcSpecs: '',
     monitor1: '',
     monitor2: '',
     printer: ''
   });
+
+  // Dynamic unique objects from data
+  const availableObjects = useMemo(() => {
+    const counts = {};
+    items.forEach(it => {
+      const obj = it.objectName || 'Bosh ofis';
+      counts[obj] = (counts[obj] || 0) + 1;
+    });
+    const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([name]) => name);
+    return ['ALL', ...sorted];
+  }, [items]);
 
   // Fetch from API (with fallback to local bundle data)
   const loadInventory = useCallback(async (showToast = false) => {
@@ -79,6 +92,7 @@ export default function InventoryPage() {
       const res = await getInventory({
         search: searchTerm,
         position: selectedDept !== 'ALL' ? selectedDept : undefined,
+        objectName: selectedObject !== 'ALL' ? selectedObject : undefined,
         deviceType: deviceFilter !== 'ALL' ? deviceFilter : undefined
       });
       if (res.data?.items) {
@@ -91,17 +105,21 @@ export default function InventoryPage() {
       if (searchTerm) {
         const s = searchTerm.toLowerCase().trim();
         filtered = filtered.filter(it => 
-          it.fullName.toLowerCase().includes(s) ||
-          it.position.toLowerCase().includes(s) ||
-          it.phone.includes(s) ||
-          it.pcSpecs.toLowerCase().includes(s) ||
-          it.monitor1.toLowerCase().includes(s) ||
-          it.monitor2.toLowerCase().includes(s) ||
-          it.printer.toLowerCase().includes(s)
+          (it.fullName && it.fullName.toLowerCase().includes(s)) ||
+          (it.position && it.position.toLowerCase().includes(s)) ||
+          (it.objectName && it.objectName.toLowerCase().includes(s)) ||
+          (it.phone && it.phone.includes(s)) ||
+          (it.pcSpecs && it.pcSpecs.toLowerCase().includes(s)) ||
+          (it.monitor1 && it.monitor1.toLowerCase().includes(s)) ||
+          (it.monitor2 && it.monitor2.toLowerCase().includes(s)) ||
+          (it.printer && it.printer.toLowerCase().includes(s))
         );
       }
       if (selectedDept !== 'ALL') {
-        filtered = filtered.filter(it => it.position.toLowerCase().includes(selectedDept.toLowerCase()));
+        filtered = filtered.filter(it => it.position && it.position.toLowerCase().includes(selectedDept.toLowerCase()));
+      }
+      if (selectedObject !== 'ALL') {
+        filtered = filtered.filter(it => (it.objectName || 'Bosh ofis') === selectedObject);
       }
       if (deviceFilter !== 'ALL') {
         if (deviceFilter === 'DUAL_MONITOR') filtered = filtered.filter(it => it.monitorCount >= 2);
@@ -112,7 +130,7 @@ export default function InventoryPage() {
     } finally {
       setLoading(false);
     }
-  }, [searchTerm, selectedDept, deviceFilter]);
+  }, [searchTerm, selectedDept, selectedObject, deviceFilter]);
 
   useEffect(() => {
     loadInventory();
@@ -135,6 +153,8 @@ export default function InventoryPage() {
       });
     } else if (sortBy === 'DEPT') {
       list.sort((a, b) => (a.position || '').localeCompare(b.position || '', 'uz'));
+    } else if (sortBy === 'OBJECT') {
+      list.sort((a, b) => (a.objectName || 'Bosh ofis').localeCompare(b.objectName || 'Bosh ofis', 'uz'));
     }
     return list;
   }, [items, sortBy]);
@@ -146,7 +166,8 @@ export default function InventoryPage() {
     const laptopCount = items.filter(it => it.deviceType === 'Laptop').length;
     const dualMonitors = items.filter(it => it.monitorCount >= 2).length;
     const printers = items.filter(it => it.printer && it.printer.trim().length > 0).length;
-    return { total, pcCount, laptopCount, dualMonitors, printers };
+    const objectsCount = new Set(items.map(it => it.objectName || 'Bosh ofis')).size;
+    return { total, pcCount, laptopCount, dualMonitors, printers, objectsCount };
   }, [items]);
 
   // Handle Export
@@ -164,9 +185,9 @@ export default function InventoryPage() {
       toast.success("Excel muvaffaqiyatli yuklab olindi! 📥", { id: 'export' });
     } catch {
       // Fallback CSV export
-      const header = 'ID,Familiya,Ism,Otasining ismi,Lavozimi,Telefon,PC/Laptop,1-Monitor,2-Monitor,Printer\n';
+      const header = 'ID,Familiya,Ism,Otasining ismi,Obyekt,Lavozimi,Telefon,PC/Laptop,1-Monitor,2-Monitor,Printer\n';
       const rows = items.map((it, idx) => 
-        `"${idx+1}","${it.lastName}","${it.firstName}","${it.middleName}","${it.position}","${it.phone}","${it.pcSpecs}","${it.monitor1}","${it.monitor2}","${it.printer}"`
+        `"${idx+1}","${it.lastName}","${it.firstName}","${it.middleName}","${it.objectName || 'Bosh ofis'}","${it.position}","${it.phone}","${it.pcSpecs}","${it.monitor1}","${it.monitor2}","${it.printer}"`
       ).join('\n');
       const blob = new Blob(['\uFEFF' + header + rows], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
@@ -186,6 +207,7 @@ export default function InventoryPage() {
         lastName: item.lastName || '',
         firstName: item.firstName || '',
         middleName: item.middleName || '',
+        objectName: item.objectName || 'Bosh ofis',
         position: item.position || '',
         phone: item.phone || '',
         pcSpecs: item.pcSpecs || '',
@@ -199,7 +221,8 @@ export default function InventoryPage() {
         lastName: '',
         firstName: '',
         middleName: '',
-        position: 'Buxgalter',
+        objectName: 'Bosh ofis',
+        position: 'Prorab',
         phone: '',
         pcSpecs: '',
         monitor1: '',
@@ -221,7 +244,11 @@ export default function InventoryPage() {
     try {
       if (editingItem) {
         await updateInventoryItem(editingItem.id, formData);
-        setItems(prev => prev.map(it => it.id === editingItem.id ? { ...it, ...formData, fullName: `${formData.lastName} ${formData.firstName} ${formData.middleName}`.trim() } : it));
+        setItems(prev => prev.map(it => it.id === editingItem.id ? { 
+          ...it, 
+          ...formData, 
+          fullName: `${formData.lastName} ${formData.firstName} ${formData.middleName}`.trim() 
+        } : it));
         toast.success("Ma'lumot yangilandi! ✅");
       } else {
         const res = await createInventoryItem(formData);
@@ -251,7 +278,7 @@ export default function InventoryPage() {
 
   return (
     <div className="page">
-      <div className="container" style={{ maxWidth: 1200 }}>
+      <div className="container" style={{ maxWidth: 1240 }}>
         
         {/* ── Page Header ── */}
         <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16, marginBottom: 24 }}>
@@ -261,11 +288,11 @@ export default function InventoryPage() {
                 <Laptop size={22} color="#F7A838" />
               </div>
               <h1 style={{ fontSize: 'clamp(1.4rem, 4vw, 1.8rem)', fontWeight: 800 }}>
-                IT Inventarizatsiya & Jihozlar
+                IT Inventarizatsiya & Obyektlar
               </h1>
             </div>
             <p className="subtitle" style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-              Tashkilot xodimlariga biriktirilgan kompyuterlar, monitorlar va ofis texnikasi hisobi (202+ ta xodim)
+              Tashkilot va barcha obyektlardagi xodimlarga biriktirilgan kompyuterlar, monitorlar va ofis texnikasi hisobi ({stats.total} ta xodim, {stats.objectsCount} ta obyekt)
             </p>
           </div>
 
@@ -296,6 +323,16 @@ export default function InventoryPage() {
             </div>
             <div style={{ width: 38, height: 38, borderRadius: 8, background: 'rgba(59,130,246,0.1)', display: 'grid', placeItems: 'center' }}>
               <User size={18} color="#3b82f6" />
+            </div>
+          </div>
+
+          <div className="card" style={{ padding: '16px 18px', borderLeft: '4px solid #06b6d4', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>OBYEKTLAR</div>
+              <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: 2 }}>{stats.objectsCount}</div>
+            </div>
+            <div style={{ width: 38, height: 38, borderRadius: 8, background: 'rgba(6,182,212,0.1)', display: 'grid', placeItems: 'center' }}>
+              <Building2 size={18} color="#06b6d4" />
             </div>
           </div>
 
@@ -351,7 +388,7 @@ export default function InventoryPage() {
                 <input
                   type="text"
                   className="form-input"
-                  placeholder="Xodim ismi, lavozim, xarakteristika yoki monitor bo'yicha qidirish..."
+                  placeholder="Xodim ismi, obyekt, lavozim, xarakteristika bo'yicha qidirish..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   style={{ paddingLeft: 42, background: 'var(--bg-input)' }}
@@ -364,6 +401,33 @@ export default function InventoryPage() {
                     <X size={16} />
                   </button>
                 )}
+              </div>
+
+              {/* Obyekt Filter Dropdown */}
+              <div style={{ minWidth: 220 }}>
+                <select
+                  className="form-input"
+                  value={selectedObject}
+                  onChange={(e) => setSelectedObject(e.target.value)}
+                  style={{ 
+                    padding: '8px 12px', 
+                    fontSize: '0.84rem', 
+                    background: '#1e293b', 
+                    color: '#f8fafc',
+                    border: '1px solid var(--border)',
+                    cursor: 'pointer',
+                    borderRadius: 8
+                  }}
+                >
+                  <option value="ALL" style={{ background: '#1e293b', color: '#f8fafc' }}>
+                    🏢 Barcha Obyektlar ({stats.objectsCount})
+                  </option>
+                  {availableObjects.filter(o => o !== 'ALL').map(obj => (
+                    <option key={obj} value={obj} style={{ background: '#1e293b', color: '#f8fafc' }}>
+                      📍 {obj}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* Sort selector */}
@@ -386,20 +450,20 @@ export default function InventoryPage() {
                 </button>
 
                 <button
-                  onClick={() => setSortBy('ZA')}
+                  onClick={() => setSortBy('OBJECT')}
                   style={{
                     padding: '7px 10px',
                     borderRadius: 6,
                     border: 'none',
-                    background: sortBy === 'ZA' ? 'var(--accent)' : 'transparent',
-                    color: sortBy === 'ZA' ? '#fff' : 'var(--text-muted)',
+                    background: sortBy === 'OBJECT' ? 'var(--accent)' : 'transparent',
+                    color: sortBy === 'OBJECT' ? '#fff' : 'var(--text-muted)',
                     cursor: 'pointer',
                     fontSize: '0.78rem',
                     fontWeight: 600
                   }}
-                  title="Teskari alifbo (Z-A)"
+                  title="Obyekt bo'yicha saralash"
                 >
-                  🔤 Z-A
+                  🏢 Obyekt
                 </button>
               </div>
 
@@ -535,7 +599,7 @@ export default function InventoryPage() {
                   transition: 'all 0.2s ease'
                 }}
               >
-                {/* Header: Name, Position, ID */}
+                {/* Header: Name, Position, Object, ID */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
                     <div style={{
@@ -553,7 +617,13 @@ export default function InventoryPage() {
                       <div style={{ fontWeight: 700, fontSize: '0.98rem', color: 'var(--text-primary)' }}>
                         {item.fullName}
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
+
+                      {/* Object Badge */}
+                      <div style={{ marginTop: 3, display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '0.74rem', color: '#38bdf8', background: 'rgba(56,189,248,0.1)', padding: '2px 8px', borderRadius: 4, border: '1px solid rgba(56,189,248,0.2)' }}>
+                        <Building2 size={11} /> {item.objectName || 'Bosh ofis'}
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
                         <span style={{
                           fontSize: '0.74rem',
                           fontWeight: 600,
@@ -571,9 +641,9 @@ export default function InventoryPage() {
                             style={{ 
                               fontSize: '0.78rem', 
                               fontWeight: 600,
-                              color: '#38bdf8', 
-                              background: 'rgba(56, 189, 248, 0.1)',
-                              border: '1px solid rgba(56, 189, 248, 0.25)',
+                              color: '#34d399', 
+                              background: 'rgba(16, 185, 129, 0.1)',
+                              border: '1px solid rgba(16, 185, 129, 0.25)',
                               padding: '2px 8px',
                               borderRadius: 6,
                               textDecoration: 'none', 
@@ -691,17 +761,18 @@ export default function InventoryPage() {
             ))}
           </div>
         ) : (
-          /* ── TABLE MODE (100% FIT, ZERO HORIZONTAL SCROLL) ── */
+          /* ── TABLE MODE ── */
           <div className="card" style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--border)' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.84rem', textAlign: 'left', tableLayout: 'auto' }}>
               <thead>
                 <tr style={{ background: 'rgba(255,255,255,0.05)', borderBottom: '2px solid rgba(255,255,255,0.08)', color: 'var(--text-muted)' }}>
                   <th style={{ padding: '12px 14px', width: '4%' }}>#</th>
-                  <th style={{ padding: '12px 14px', width: '25%' }}>Xodim & Lavozimi</th>
-                  <th style={{ padding: '12px 14px', width: '18%' }}>Telefon</th>
-                  <th style={{ padding: '12px 14px', width: '30%' }}>Kompyuter Xarakteristikasi</th>
-                  <th style={{ padding: '12px 14px', width: '15%' }}>Monitor / Jihozlar</th>
-                  <th style={{ padding: '12px 14px', width: '8%', textAlign: 'right' }}>Amallar</th>
+                  <th style={{ padding: '12px 14px', width: '22%' }}>Xodim & Lavozimi</th>
+                  <th style={{ padding: '12px 14px', width: '18%' }}>Obyekt / Filial</th>
+                  <th style={{ padding: '12px 14px', width: '14%' }}>Telefon</th>
+                  <th style={{ padding: '12px 14px', width: '24%' }}>Kompyuter Xarakteristikasi</th>
+                  <th style={{ padding: '12px 14px', width: '12%' }}>Monitor / Printer</th>
+                  <th style={{ padding: '12px 14px', width: '6%', textAlign: 'right' }}>Amallar</th>
                 </tr>
               </thead>
               <tbody>
@@ -736,6 +807,14 @@ export default function InventoryPage() {
                       </div>
                     </td>
 
+                    {/* Object */}
+                    <td style={{ padding: '12px 14px', verticalAlign: 'top' }}>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '0.78rem', color: '#38bdf8', background: 'rgba(56,189,248,0.08)', padding: '3px 8px', borderRadius: 6, border: '1px solid rgba(56,189,248,0.2)' }}>
+                        <Building2 size={12} />
+                        <span>{item.objectName || 'Bosh ofis'}</span>
+                      </div>
+                    </td>
+
                     {/* Phone */}
                     <td style={{ padding: '12px 14px', verticalAlign: 'top' }}>
                       {item.phone ? (
@@ -743,7 +822,7 @@ export default function InventoryPage() {
                           href={`tel:${item.phone}`} 
                           style={{ 
                             fontSize: '0.78rem', 
-                            color: '#38bdf8', 
+                            color: '#34d399', 
                             textDecoration: 'none', 
                             fontWeight: 600,
                             display: 'inline-flex',
@@ -872,26 +951,39 @@ export default function InventoryPage() {
                   </div>
 
                   <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="form-label">Lavozimi / Bo'limi</label>
+                    <label className="form-label">Obyekt / Filial</label>
                     <input 
                       type="text" 
                       className="form-input" 
-                      placeholder="Buxgalter / PTO / HR" 
-                      value={formData.position} 
-                      onChange={(e) => setFormData(p => ({ ...p, position: e.target.value }))} 
+                      placeholder="City Makon (Blok A) / Bosh ofis" 
+                      value={formData.objectName} 
+                      onChange={(e) => setFormData(p => ({ ...p, objectName: e.target.value }))} 
                     />
                   </div>
                 </div>
 
-                <div className="form-group" style={{ marginBottom: 12 }}>
-                  <label className="form-label">Telefon raqam</label>
-                  <input 
-                    type="tel" 
-                    className="form-input" 
-                    placeholder="+998 90 123 45 67" 
-                    value={formData.phone} 
-                    onChange={(e) => setFormData(p => ({ ...p, phone: e.target.value }))} 
-                  />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="form-label">Lavozimi / Bo'limi</label>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      placeholder="Prorab / Injener / Buxgalter" 
+                      value={formData.position} 
+                      onChange={(e) => setFormData(p => ({ ...p, position: e.target.value }))} 
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="form-label">Telefon raqam</label>
+                    <input 
+                      type="tel" 
+                      className="form-input" 
+                      placeholder="+998 90 123 45 67" 
+                      value={formData.phone} 
+                      onChange={(e) => setFormData(p => ({ ...p, phone: e.target.value }))} 
+                    />
+                  </div>
                 </div>
 
                 <div className="form-group" style={{ marginBottom: 12 }}>
@@ -934,7 +1026,7 @@ export default function InventoryPage() {
                   <input 
                     type="text" 
                     className="form-input" 
-                    placeholder="Canon 3010, HP LaserJet..." 
+                    placeholder="Canon MF3010, Epson L1800..." 
                     value={formData.printer} 
                     onChange={(e) => setFormData(p => ({ ...p, printer: e.target.value }))} 
                   />

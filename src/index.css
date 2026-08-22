@@ -4,6 +4,7 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
+  color-scheme: dark;
   --bg-base:        #0a0d14;
   --bg-surface:     #111827;
   --bg-card:        rgba(255,255,255,0.04);
@@ -199,8 +200,11 @@ h3 { font-size: 1.1rem; font-weight: 600; }
   letter-spacing: 0.06em;
 }
 .form-input,
-.form-textarea {
-  background: rgba(255,255,255,0.04);
+.form-textarea,
+select.form-input,
+select {
+  background: #111827;
+  background-color: #111827;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--text-primary);
@@ -210,13 +214,35 @@ h3 { font-size: 1.1rem; font-weight: 600; }
   outline: none;
   transition: all var(--transition);
   width: 100%;
+  color-scheme: dark;
+}
+select,
+select.form-input {
+  cursor: pointer;
+}
+select option,
+select optgroup,
+.form-input option,
+.form-input optgroup {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+  padding: 10px 14px;
+}
+select option:checked,
+select option:hover,
+select option:focus {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
 }
 .form-input::placeholder,
 .form-textarea::placeholder { color: var(--text-muted); }
 .form-input:focus,
-.form-textarea:focus {
+.form-textarea:focus,
+select:focus,
+select.form-input:focus {
   border-color: var(--border-focus);
-  background: rgba(59,130,246,0.04);
+  background: #131d31;
+  background-color: #131d31;
   box-shadow: 0 0 0 3px var(--accent-glow);
 }
 .form-textarea { resize: vertical; min-height: 110px; }
