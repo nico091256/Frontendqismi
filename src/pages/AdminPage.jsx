@@ -27,6 +27,13 @@ export default function AdminPage() {
   const [statusFilter, setStatusFilter] = useState('ALL'); // ALL | NEW | RESOLVED
   const [searchTerm, setSearchTerm] = useState('');
   
+  // Foydalanuvchi roli (localStorage dan)
+  const currentRole = (() => {
+    try { return JSON.parse(localStorage.getItem('it_auth') || '{}').role || ''; }
+    catch { return ''; }
+  })();
+  const isManager = currentRole === 'MANAGER';
+
   const [resolvingId, setResolvingId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [assigningId, setAssigningId] = useState(null);
@@ -490,6 +497,7 @@ export default function AdminPage() {
                 resolving={resolvingId === problem.id}
                 deleting={deletingId === problem.id}
                 assigning={assigningId}
+                isManager={isManager}
               />
             ))}
           </div>

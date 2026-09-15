@@ -79,7 +79,8 @@ export default function ProblemCard({
   workers = [], 
   resolving, 
   deleting,
-  assigning
+  assigning,
+  isManager = false  // Faqat Manager o'chira oladi
 }) {
   const isResolved = problem.status === 'RESOLVED';
   const isTM = problem.type === 'Texnik muammo';
@@ -297,14 +298,16 @@ export default function ProblemCard({
             <Edit2 size={14} />
             Tahrir
           </button>
-          <button
-            className="btn btn-danger btn-sm"
-            onClick={() => onDelete(problem.id)}
-            disabled={deleting === problem.id}
-          >
-            <Trash2 size={14} />
-            O'chirish
-          </button>
+          {isManager && (
+            <button
+              className="btn btn-danger btn-sm"
+              onClick={() => onDelete(problem.id)}
+              disabled={deleting === problem.id}
+            >
+              <Trash2 size={14} />
+              O'chirish
+            </button>
+          )}
         </div>
       </div>
     </div>
