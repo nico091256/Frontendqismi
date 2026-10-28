@@ -8,7 +8,8 @@ function formatDateUz(d = new Date()) {
 }
 
 export default function HandoverActModal({ problem, isOpen, onClose }) {
-  if (!isOpen || !problem) return null;
+  // React Hook qoidasi: hook'lar har doim shartsiz, erta return'dan OLDIN chaqilishi shart.
+  const p = problem || {};
 
   // Current logged in IT admin/support
   const authUser = (() => {
@@ -20,14 +21,14 @@ export default function HandoverActModal({ problem, isOpen, onClose }) {
     }
   })();
 
-  const defaultSenderName = authUser?.fullName || problem.assignedUser?.fullName || 'Najmiddinov Shovkatxo\'ja Nematillo o\'g\'li';
-  const defaultSenderPhone = authUser?.phone || problem.assignedUser?.phone || '+998959888034';
+  const defaultSenderName = authUser?.fullName || p.assignedUser?.fullName || '';
+  const defaultSenderPhone = authUser?.phone || p.assignedUser?.phone || '';
 
-  const defaultReceiverName = `${problem.lastName || ''} ${problem.firstName || ''} ${problem.middleName || ''}`.trim() || 'Xodim F.I.Sh';
-  const defaultReceiverPhone = problem.phone || '';
+  const defaultReceiverName = `${p.lastName || ''} ${p.firstName || ''} ${p.middleName || ''}`.trim() || 'Xodim F.I.Sh';
+  const defaultReceiverPhone = p.phone || '';
 
   // Extract model and description
-  const reqItem = problem.requestedItem || problem.description || 'Jihoz';
+  const reqItem = p.requestedItem || p.description || 'Jihoz';
   let initialModel = '-';
   if (/lenovo/i.test(reqItem)) initialModel = 'Lenovo';
   else if (/artel/i.test(reqItem)) initialModel = 'Artel';
@@ -45,11 +46,11 @@ export default function HandoverActModal({ problem, isOpen, onClose }) {
     docTitle: 'ФОРМА ПЕРЕДАЧИ ОРГТЕХНИКИ И ОБОРУДОВАНИЯ',
     equipmentDesc: reqItem,
     daa: '-',
-    invNumber: problem.ticketNumber || '-',
+    invNumber: p.ticketNumber || '-',
     model: initialModel,
-    quantity: problem.quantity || 1,
+    quantity: p.quantity || 1,
     notes: '-',
-    date: formatDateUz(problem.resolvedAt || problem.createdAt || new Date()),
+    date: formatDateUz(p.resolvedAt || p.createdAt || new Date()),
     receiverName: defaultReceiverName,
     receiverPhone: defaultReceiverPhone,
     senderName: defaultSenderName,
@@ -61,6 +62,9 @@ export default function HandoverActModal({ problem, isOpen, onClose }) {
   const handlePrint = () => {
     window.print();
   };
+
+  // Hook'lardan KEYIN erta return — React qoidasiga mos
+  if (!isOpen || !problem) return null;
 
   return (
     <div style={{

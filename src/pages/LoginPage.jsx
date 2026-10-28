@@ -386,7 +386,7 @@ export default function LoginPage() {
         {/* Footer */}
         <p style={{ textAlign: 'center', marginTop: 20, fontSize: '0.78rem', color: 'var(--text-muted)' }}>
           Murojaat yuborish uchun →{' '}
-          <a href="http://localhost:5175" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-light)', textDecoration: 'none', fontWeight: 600 }}>
+          <a href={import.meta.env.VITE_PORTAL_URL || (import.meta.env.PROD ? 'https://ticket.di.uz' : 'http://localhost:5175')} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-light)', textDecoration: 'none', fontWeight: 600 }}>
             Murojaat portali
           </a>
         </p>

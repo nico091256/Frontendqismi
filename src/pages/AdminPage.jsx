@@ -505,11 +505,14 @@ export default function AdminPage() {
       </div>
 
       {/* ════ TOPShIRISH AKTI (SHARTNOMA) MODAL OYNASI ════ */}
-      <HandoverActModal
-        problem={actProblem}
-        isOpen={!!actProblem}
-        onClose={() => setActProblem(null)}
-      />
+      {actProblem && (
+        <HandoverActModal
+          key={actProblem.id}
+          problem={actProblem}
+          isOpen={true}
+          onClose={() => setActProblem(null)}
+        />
+      )}
 
       {/* ════ HAL QILISH MODAL OYNASI (#3 RESOLVE NOTE MODAL) ════ */}
       {resolvingProblem && (

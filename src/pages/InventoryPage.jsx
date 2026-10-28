@@ -6,7 +6,6 @@ import {
   deleteInventoryItem, 
   exportInventoryExcel 
 } from '../api/problems';
-import initialData from '../data/inventoryData.json';
 import toast from 'react-hot-toast';
 import {
   Laptop, Monitor, Printer, Search, Plus, Download, RefreshCw, 
@@ -48,7 +47,7 @@ function formatPhone(phone) {
 }
 
 export default function InventoryPage() {
-  const [items, setItems] = useState(initialData || []);
+  const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDept, setSelectedDept] = useState('ALL');
@@ -99,34 +98,13 @@ export default function InventoryPage() {
         setItems(res.data.items);
         if (showToast) toast.success("Inventar ma'lumotlari yangilandi! 🔄");
       }
-    } catch {
-      // Offline fallback: filter local dataset
-      let filtered = [...initialData];
-      if (searchTerm) {
-        const s = searchTerm.toLowerCase().trim();
-        filtered = filtered.filter(it => 
-          (it.fullName && it.fullName.toLowerCase().includes(s)) ||
-          (it.position && it.position.toLowerCase().includes(s)) ||
-          (it.objectName && it.objectName.toLowerCase().includes(s)) ||
-          (it.phone && it.phone.includes(s)) ||
-          (it.pcSpecs && it.pcSpecs.toLowerCase().includes(s)) ||
-          (it.monitor1 && it.monitor1.toLowerCase().includes(s)) ||
-          (it.monitor2 && it.monitor2.toLowerCase().includes(s)) ||
-          (it.printer && it.printer.toLowerCase().includes(s))
-        );
+    } catch (err) {
+      if (err.response?.status === 401) {
+        toast.error("Sessiya muddati tugadi. Qayta kiring.");
+      } else {
+        toast.error("Inventar ma'lumotlarini yuklashda xatolik.");
       }
-      if (selectedDept !== 'ALL') {
-        filtered = filtered.filter(it => it.position && it.position.toLowerCase().includes(selectedDept.toLowerCase()));
-      }
-      if (selectedObject !== 'ALL') {
-        filtered = filtered.filter(it => (it.objectName || 'Bosh ofis') === selectedObject);
-      }
-      if (deviceFilter !== 'ALL') {
-        if (deviceFilter === 'DUAL_MONITOR') filtered = filtered.filter(it => it.monitorCount >= 2);
-        else if (deviceFilter === 'HAS_PRINTER') filtered = filtered.filter(it => it.printer && it.printer.length > 0);
-        else filtered = filtered.filter(it => it.deviceType === deviceFilter);
-      }
-      setItems(filtered);
+      setItems([]);
     } finally {
       setLoading(false);
     }
