@@ -8,11 +8,12 @@ import {
 } from '../api/problems';
 import toast from 'react-hot-toast';
 import {
-  Laptop, Monitor, Printer, Search, Plus, Download, RefreshCw, 
-  Trash2, Edit3, User, Phone, Briefcase, Cpu, HardDrive, 
-  SlidersHorizontal, LayoutGrid, Table, Check, X, Shield, 
+  Laptop, Monitor, Printer, Search, Plus, Download, RefreshCw,
+  Trash2, Edit3, User, Phone, Briefcase, Cpu, HardDrive,
+  SlidersHorizontal, LayoutGrid, Table, Check, X, Shield,
   Sparkles, Layers, Info, Filter, ArrowUpDown, ChevronRight,
-  Building2, MapPin
+  Building2, MapPin, Keyboard, Mouse, Headphones, Camera,
+  Usb, Plug, BatteryCharging, ScanLine, Package
 } from 'lucide-react';
 
 const DEPARTMENTS = [
@@ -32,6 +33,43 @@ const DEPARTMENTS = [
   'Master',
   'TB'
 ];
+
+// Qo'shimcha jihoz nomidan mos ikonka va rangni aniqlash
+const EXTRA_DEVICE_ICONS = [
+  { re: /ups|battareya|battery/i,                        Icon: BatteryCharging, color: '#f59e0b' },
+  { re: /naushnik|quloqchin|headphone|garnitura/i,       Icon: Headphones,      color: '#a78bfa' },
+  { re: /kamera|webcam|camera/i,                         Icon: Camera,          color: '#38bdf8' },
+  { re: /fleshka|flash|usb/i,                            Icon: Usb,             color: '#34d399' },
+  { re: /udlinitel|razvetvitel|setevoy|filtr|extension/i, Icon: Plug,           color: '#f472b6' },
+  { re: /skaner|scanner/i,                               Icon: ScanLine,        color: '#60a5fa' },
+];
+
+function getExtraDeviceIcon(name) {
+  for (const rule of EXTRA_DEVICE_ICONS) {
+    if (rule.re.test(name)) return rule;
+  }
+  return { Icon: Package, color: '#94a3b8' };
+}
+
+// Jihoz nishoni (badge) — ikonka + nom
+function DeviceBadge({ icon: Icon, color, children }) {
+  return (
+    <span style={{
+      fontSize: '0.74rem',
+      fontWeight: 600,
+      padding: '4px 8px',
+      borderRadius: 6,
+      background: 'rgba(255,255,255,0.05)',
+      color,
+      border: '1px solid rgba(255,255,255,0.12)',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 4
+    }}>
+      <Icon size={12} /> {children}
+    </span>
+  );
+}
 
 function formatPhone(phone) {
   if (!phone) return '';
@@ -70,7 +108,10 @@ export default function InventoryPage() {
     pcSpecs: '',
     monitor1: '',
     monitor2: '',
-    printer: ''
+    printer: '',
+    keyboard: '',
+    mouse: '',
+    extraDevices: []
   });
 
   // Dynamic unique objects from data
@@ -163,9 +204,9 @@ export default function InventoryPage() {
       toast.success("Excel muvaffaqiyatli yuklab olindi! 📥", { id: 'export' });
     } catch {
       // Fallback CSV export
-      const header = 'ID,Familiya,Ism,Otasining ismi,Obyekt,Lavozimi,Telefon,PC/Laptop,1-Monitor,2-Monitor,Printer\n';
-      const rows = items.map((it, idx) => 
-        `"${idx+1}","${it.lastName}","${it.firstName}","${it.middleName}","${it.objectName || 'Bosh ofis'}","${it.position}","${it.phone}","${it.pcSpecs}","${it.monitor1}","${it.monitor2}","${it.printer}"`
+      const header = "ID,Familiya,Ism,Otasining ismi,Obyekt,Lavozimi,Telefon,PC/Laptop,1-Monitor,2-Monitor,Printer,Klaviatura,Mishka,Qo'shimcha jihozlar\n";
+      const rows = items.map((it, idx) =>
+        `"${idx+1}","${it.lastName}","${it.firstName}","${it.middleName}","${it.objectName || 'Bosh ofis'}","${it.position}","${it.phone}","${it.pcSpecs}","${it.monitor1}","${it.monitor2}","${it.printer}","${it.keyboard || ''}","${it.mouse || ''}","${Array.isArray(it.extraDevices) ? it.extraDevices.join('; ') : ''}"`
       ).join('\n');
       const blob = new Blob(['\uFEFF' + header + rows], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
@@ -191,7 +232,10 @@ export default function InventoryPage() {
         pcSpecs: item.pcSpecs || '',
         monitor1: item.monitor1 || '',
         monitor2: item.monitor2 || '',
-        printer: item.printer || ''
+        printer: item.printer || '',
+        keyboard: item.keyboard || '',
+        mouse: item.mouse || '',
+        extraDevices: Array.isArray(item.extraDevices) ? [...item.extraDevices] : []
       });
     } else {
       setEditingItem(null);
@@ -205,7 +249,10 @@ export default function InventoryPage() {
         pcSpecs: '',
         monitor1: '',
         monitor2: '',
-        printer: ''
+        printer: '',
+        keyboard: '',
+        mouse: '',
+        extraDevices: []
       });
     }
     setIsModalOpen(true);
@@ -219,17 +266,23 @@ export default function InventoryPage() {
       return;
     }
 
+    // Qo'shimcha jihozlar ro'yxatini tozalash (bo'sh qatorlar olib tashlanadi)
+    const payload = {
+      ...formData,
+      extraDevices: formData.extraDevices.map(d => d.trim()).filter(Boolean)
+    };
+
     try {
       if (editingItem) {
-        await updateInventoryItem(editingItem.id, formData);
-        setItems(prev => prev.map(it => it.id === editingItem.id ? { 
-          ...it, 
-          ...formData, 
-          fullName: `${formData.lastName} ${formData.firstName} ${formData.middleName}`.trim() 
+        await updateInventoryItem(editingItem.id, payload);
+        setItems(prev => prev.map(it => it.id === editingItem.id ? {
+          ...it,
+          ...payload,
+          fullName: `${payload.lastName} ${payload.firstName} ${payload.middleName}`.trim()
         } : it));
         toast.success("Ma'lumot yangilandi! ✅");
       } else {
-        const res = await createInventoryItem(formData);
+        const res = await createInventoryItem(payload);
         if (res.data?.item) {
           setItems(prev => [res.data.item, ...prev]);
         }
@@ -714,6 +767,21 @@ export default function InventoryPage() {
                       <Printer size={12} /> {item.printer}
                     </span>
                   )}
+
+                  {item.keyboard && (
+                    <DeviceBadge icon={Keyboard} color="#fbbf24">{item.keyboard}</DeviceBadge>
+                  )}
+
+                  {item.mouse && (
+                    <DeviceBadge icon={Mouse} color="#c084fc">{item.mouse}</DeviceBadge>
+                  )}
+
+                  {Array.isArray(item.extraDevices) && item.extraDevices.map((dev, i) => {
+                    const { Icon, color } = getExtraDeviceIcon(dev);
+                    return (
+                      <DeviceBadge key={i} icon={Icon} color={color}>{dev}</DeviceBadge>
+                    );
+                  })}
                 </div>
 
                 {/* Card Action footer */}
@@ -749,7 +817,7 @@ export default function InventoryPage() {
                   <th style={{ padding: '12px 14px', width: '18%' }}>Obyekt / Filial</th>
                   <th style={{ padding: '12px 14px', width: '14%' }}>Telefon</th>
                   <th style={{ padding: '12px 14px', width: '24%' }}>Kompyuter Xarakteristikasi</th>
-                  <th style={{ padding: '12px 14px', width: '12%' }}>Monitor / Printer</th>
+                  <th style={{ padding: '12px 14px', width: '12%' }}>Jihozlar</th>
                   <th style={{ padding: '12px 14px', width: '6%', textAlign: 'right' }}>Amallar</th>
                 </tr>
               </thead>
@@ -838,7 +906,25 @@ export default function InventoryPage() {
                             <Printer size={11} /> {item.printer}
                           </span>
                         )}
-                        {!item.monitor1 && !item.monitor2 && !item.printer && (
+                        {item.keyboard && (
+                          <span style={{ fontSize: '0.74rem', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <Keyboard size={11} /> {item.keyboard}
+                          </span>
+                        )}
+                        {item.mouse && (
+                          <span style={{ fontSize: '0.74rem', color: '#c084fc', display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <Mouse size={11} /> {item.mouse}
+                          </span>
+                        )}
+                        {Array.isArray(item.extraDevices) && item.extraDevices.map((dev, i) => {
+                          const { Icon, color } = getExtraDeviceIcon(dev);
+                          return (
+                            <span key={i} style={{ fontSize: '0.74rem', color, display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <Icon size={11} /> {dev}
+                            </span>
+                          );
+                        })}
+                        {!item.monitor1 && !item.monitor2 && !item.printer && !item.keyboard && !item.mouse && !(item.extraDevices && item.extraDevices.length) && (
                           <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>—</span>
                         )}
                       </div>
@@ -999,15 +1085,88 @@ export default function InventoryPage() {
                   </div>
                 </div>
 
-                <div className="form-group" style={{ marginBottom: 20 }}>
-                  <label className="form-label">Printer / Qo'shimcha Qurilma</label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    placeholder="Canon MF3010, Epson L1800..." 
-                    value={formData.printer} 
-                    onChange={(e) => setFormData(p => ({ ...p, printer: e.target.value }))} 
+                <div className="form-group" style={{ marginBottom: 12 }}>
+                  <label className="form-label">Printer</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="Canon MF3010, Epson L1800..."
+                    value={formData.printer}
+                    onChange={(e) => setFormData(p => ({ ...p, printer: e.target.value }))}
                   />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <Keyboard size={13} color="#fbbf24" /> Klaviatura
+                    </label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="Logitech K120, A4Tech..."
+                      value={formData.keyboard}
+                      onChange={(e) => setFormData(p => ({ ...p, keyboard: e.target.value }))}
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <Mouse size={13} color="#c084fc" /> Mishka (Sichqoncha)
+                    </label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="Logitech B100, X7..."
+                      value={formData.mouse}
+                      onChange={(e) => setFormData(p => ({ ...p, mouse: e.target.value }))}
+                    />
+                  </div>
+                </div>
+
+                {/* ── Qo'shimcha jihozlar (dinamik ro'yxat) ── */}
+                <div className="form-group" style={{ marginBottom: 20 }}>
+                  <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <Package size={13} color="#94a3b8" /> Qo'shimcha jihozlar (UPS, Naushnik, Veb-kamera, Fleshka...)
+                  </label>
+
+                  {formData.extraDevices.map((dev, idx) => (
+                    <div key={idx} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder="Masalan: UPS FSP 650VA / Naushnik A4Tech"
+                        value={dev}
+                        onChange={(e) => setFormData(p => {
+                          const list = [...p.extraDevices];
+                          list[idx] = e.target.value;
+                          return { ...p, extraDevices: list };
+                        })}
+                        style={{ flex: 1 }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setFormData(p => ({ ...p, extraDevices: p.extraDevices.filter((_, i) => i !== idx) }))}
+                        title="O'chirish"
+                        style={{
+                          width: 38, flexShrink: 0, borderRadius: 8,
+                          border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.08)',
+                          color: '#f87171', cursor: 'pointer', display: 'grid', placeItems: 'center'
+                        }}
+                      >
+                        <X size={15} />
+                      </button>
+                    </div>
+                  ))}
+
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => setFormData(p => ({ ...p, extraDevices: [...p.extraDevices, ''] }))}
+                    style={{ borderColor: 'rgba(56,189,248,0.35)', color: '#38bdf8', marginTop: 4 }}
+                  >
+                    <Plus size={14} /> Yana jihoz qo'shish
+                  </button>
                 </div>
 
                 {/* Footer Buttons */}

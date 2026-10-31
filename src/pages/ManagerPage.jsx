@@ -450,6 +450,9 @@ export default function ManagerPage() {
                             <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>
                               <Phone size={11} /> {w.phone}
                             </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.72rem', marginTop: 3, color: w.telegramChatId ? '#38bdf8' : 'var(--text-muted)', opacity: w.telegramChatId ? 1 : 0.6 }}>
+                              <Send size={10} /> {w.telegramChatId ? 'Telegram ulangan' : 'Telegram ulanmagan'}
+                            </div>
                           </div>
                         </div>
 

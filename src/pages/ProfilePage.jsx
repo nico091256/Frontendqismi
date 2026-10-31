@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { getMe, updateProfile, changePassword } from "../api/problems";
+import { getMe, updateProfile, changePassword, getTelegramLink } from "../api/problems";
 import toast from "react-hot-toast";
 import { 
   User, Phone, Shield, Lock, Eye, EyeOff, ArrowLeft, 
@@ -20,6 +20,7 @@ export default function ProfilePage() {
 
   const [telegramChatId, setTelegramChatId] = useState(user?.telegramChatId || "");
   const [savingTg, setSavingTg] = useState(false);
+  const [tgInfo, setTgInfo] = useState(null); // { configured, botReady, botUsername, link, ... }
 
   const [form, setForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
   const [showCurrent, setShowCurrent] = useState(false);
@@ -33,6 +34,7 @@ export default function ProfilePage() {
         setTelegramChatId(res.data.user.telegramChatId || "");
       }
     }).catch(() => {});
+    getTelegramLink().then(res => setTgInfo(res.data)).catch(() => {});
   }, []);
 
   if (!user) { navigate("/login"); return null; }
@@ -52,6 +54,47 @@ export default function ProfilePage() {
       toast.success("Telegram Chat ID saqlandi! 📲");
     } catch (err) {
       toast.error(err.response?.data?.message || "Saqlashda xatolik");
+    } finally {
+      setSavingTg(false);
+    }
+  };
+
+  // Telegram holatini serverdan qayta o'qish (bot orqali ulangandan keyin)
+  const refreshTelegramState = async () => {
+    try {
+      const res = await getMe();
+      if (res.data?.user) {
+        setUser(res.data.user);
+        setTelegramChatId(res.data.user.telegramChatId || "");
+        const auth = JSON.parse(localStorage.getItem("it_auth") || "{}");
+        localStorage.setItem("it_auth", JSON.stringify({ ...auth, telegramChatId: res.data.user.telegramChatId }));
+        return res.data.user;
+      }
+    } catch { /* ignore */ }
+    return null;
+  };
+
+  const handleCheckTelegram = async () => {
+    const fresh = await refreshTelegramState();
+    if (fresh?.telegramChatId) {
+      toast.success("Telegram muvaffaqiyatli ulandi! ✅");
+    } else {
+      toast("Hali ulanmagan. Botda «Start» tugmasi bosilganini tekshiring.", { icon: "ℹ️" });
+    }
+  };
+
+  const handleDisconnectTelegram = async () => {
+    if (!window.confirm("Telegram bildirishnomalarini uzmoqchimisiz?")) return;
+    setSavingTg(true);
+    try {
+      const res = await updateProfile({ telegramChatId: null });
+      setUser(res.data.user);
+      setTelegramChatId("");
+      const auth = JSON.parse(localStorage.getItem("it_auth") || "{}");
+      localStorage.setItem("it_auth", JSON.stringify({ ...auth, telegramChatId: null }));
+      toast.success("Telegram uzildi 🔌");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Uzishda xatolik");
     } finally {
       setSavingTg(false);
     }
@@ -165,38 +208,97 @@ export default function ProfilePage() {
           <h3 style={{ fontSize: "1rem", fontWeight: 600, color: "var(--text-primary)", marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
             <Send size={16} color="#38bdf8" /> Telegram Xabarnoma Sozlamasi
           </h3>
-          <p style={{ fontSize: "0.84rem", color: "var(--text-secondary)", marginBottom: 16, lineHeight: 1.5 }}>
-            Sizga yangi murojaat biriktirilganda yoki topshiriq yuklanganda Telegram orqali xabar olish uchun shaxsiy Chat ID raqamingizni kiriting.
-          </p>
 
-          <form onSubmit={handleSaveTelegram}>
-            <div className="form-group" style={{ marginBottom: 12 }}>
-              <label className="form-label">Telegram Chat ID</label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="Masalan: 123456789"
-                value={telegramChatId}
-                onChange={(e) => setTelegramChatId(e.target.value)}
-              />
-            </div>
-
-            <div style={{
-              background: "rgba(56,189,248,0.08)", border: "1px solid rgba(56,189,248,0.2)",
-              borderRadius: 10, padding: "10px 14px", marginBottom: 16, fontSize: "0.78rem", color: "var(--text-muted)",
-              display: "flex", alignItems: "flex-start", gap: 8
-            }}>
-              <Info size={16} color="#38bdf8" style={{ flexShrink: 0, marginTop: 2 }} />
-              <div>
-                Chat ID raqamingizni bilish uchun Telegramda <a href="https://t.me/userinfobot" target="_blank" rel="noreferrer" style={{ color: "#38bdf8", fontWeight: 600 }}>@userinfobot</a> ga kiring va <code>/start</code> bosing. U sizga <code>Id: 123456789</code> raqamingizni ko'rsatadi.
+          {user.telegramChatId ? (
+            /* ── ULANGAN HOLAT ── */
+            <>
+              <div style={{
+                display: "flex", alignItems: "center", gap: 10,
+                background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.3)",
+                borderRadius: 12, padding: "12px 16px", marginBottom: 14
+              }}>
+                <CheckCircle2 size={18} color="#10b981" style={{ flexShrink: 0 }} />
+                <span style={{ color: "#34d399", fontWeight: 600, fontSize: "0.9rem" }}>
+                  ✅ Telegram ulangan (Chat ID: {user.telegramChatId})
+                </span>
               </div>
-            </div>
+              <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: 14, lineHeight: 1.5 }}>
+                Barcha muhim bildirishnomalar (yangi murojaat, topshiriq, muddat ogohlantirishlari) Telegram orqali keladi.
+              </p>
+              <button type="button" className="btn btn-ghost" onClick={handleDisconnectTelegram} disabled={savingTg}
+                style={{ borderColor: "rgba(239,68,68,0.4)", color: "#f87171" }}>
+                {savingTg ? "Uzilmoqda..." : "🔌 Uzish (Disconnect)"}
+              </button>
+            </>
+          ) : (
+            /* ── ULANMAGAN HOLAT ── */
+            <>
+              <p style={{ fontSize: "0.84rem", color: "var(--text-secondary)", marginBottom: 16, lineHeight: 1.5 }}>
+                Sizga yangi murojaat biriktirilganda, topshiriq yuklanganda yoki muddat yaqinlashganda Telegram orqali xabar olish uchun botni ulang.
+              </p>
 
-            <button type="submit" className="btn btn-primary" disabled={savingTg}>
-              <CheckCircle2 size={15} />
-              {savingTg ? "Saqlanmoqda..." : "Telegram ID ni saqlash"}
-            </button>
-          </form>
+              {tgInfo?.link ? (
+                <>
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 14 }}>
+                    <a href={tgInfo.link} target="_blank" rel="noreferrer" className="btn btn-primary"
+                      style={{ textDecoration: "none" }}>
+                      🤖 Telegram Botni ulash
+                    </a>
+                    <button type="button" className="btn btn-ghost" onClick={handleCheckTelegram}>
+                      🔄 Ulanishni tekshirish
+                    </button>
+                  </div>
+                  <div style={{
+                    background: "rgba(56,189,248,0.08)", border: "1px solid rgba(56,189,248,0.2)",
+                    borderRadius: 10, padding: "10px 14px", marginBottom: 20, fontSize: "0.78rem", color: "var(--text-muted)",
+                    display: "flex", alignItems: "flex-start", gap: 8
+                  }}>
+                    <Info size={16} color="#38bdf8" style={{ flexShrink: 0, marginTop: 2 }} />
+                    <div>
+                      Tugmani bosganingizda <b>@{tgInfo.botUsername}</b> boti ochiladi — u yerda <code>Start</code> tugmasini bosing. So'ng bu yerga qaytib «Ulanishni tekshirish»ni bosing.
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div style={{
+                  background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)",
+                  borderRadius: 10, padding: "10px 14px", marginBottom: 20, fontSize: "0.78rem", color: "var(--text-muted)"
+                }}>
+                  ℹ️ Bot hozircha sozlanmagan yoki ishga tushmagan (TELEGRAM_BOT_TOKEN). Quyida Chat ID orqali qo'lda ulashingiz mumkin.
+                </div>
+              )}
+
+              {/* Qo'lda ulash (zaxira usul) */}
+              <form onSubmit={handleSaveTelegram}>
+                <div className="form-group" style={{ marginBottom: 12 }}>
+                  <label className="form-label">Qo'lda ulash — Telegram Chat ID</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="Masalan: 123456789"
+                    value={telegramChatId}
+                    onChange={(e) => setTelegramChatId(e.target.value)}
+                  />
+                </div>
+
+                <div style={{
+                  background: "rgba(56,189,248,0.08)", border: "1px solid rgba(56,189,248,0.2)",
+                  borderRadius: 10, padding: "10px 14px", marginBottom: 16, fontSize: "0.78rem", color: "var(--text-muted)",
+                  display: "flex", alignItems: "flex-start", gap: 8
+                }}>
+                  <Info size={16} color="#38bdf8" style={{ flexShrink: 0, marginTop: 2 }} />
+                  <div>
+                    Chat ID raqamingizni bilish uchun botga <code>/chatid</code> deb yozing yoki Telegramda <a href="https://t.me/userinfobot" target="_blank" rel="noreferrer" style={{ color: "#38bdf8", fontWeight: 600 }}>@userinfobot</a> ga kiring va <code>/start</code> bosing.
+                  </div>
+                </div>
+
+                <button type="submit" className="btn btn-primary" disabled={savingTg}>
+                  <CheckCircle2 size={15} />
+                  {savingTg ? "Saqlanmoqda..." : "Telegram ID ni saqlash"}
+                </button>
+              </form>
+            </>
+          )}
         </div>
 
         {/* Parol o'zgartirish */}

@@ -29,6 +29,7 @@ export const updateProfile         = (data) => api.patch('/auth/profile', data);
 export const changePassword        = (data) => api.patch('/auth/change-password', data);
 export const getRegistrationStatus = ()     => api.get('/auth/registration-status');
 export const setRegistrationStatus = (isOpen) => api.patch('/auth/registration-status', { registrationOpen: isOpen });
+export const getTelegramLink       = ()     => api.get('/auth/telegram-link');
 
 // ── Foydalanuvchilar (Manager uchun) ─────────────────────────────────
 export const getITWorkers   = ()   => api.get('/users?role=IT_SUPPORT');
